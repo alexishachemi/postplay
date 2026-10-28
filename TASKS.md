@@ -40,7 +40,7 @@ Do not insert example results like these until they have actually occurred. The 
 
 - **Task:** None — M1.1 verified; next is M1.2 runtime collection lifecycle.
 - **Status:** Ready for M1.2.
-- **Last checkpoint:** 2026-10-28 — raw v1 contracts and cross-engine checks verified; final commit being prepared.
+- **Last checkpoint:** 2026-10-28 — M1.1 implemented and verified in `d370412`; staged scope/credential check passed. Ready for M1.2.
 - **Objective:** Versioned manifest/event schemas, bounded Godot safe-value serializer, strict Node contract validation, documented clocks/status/IDs and deterministic cross-engine fixtures/tests.
 - **Progress actually saved:** Three schemas and synthetic complete/incomplete packages under `contracts/`; bounded native Godot encoder/UUID helper; pure Node schema/JSONL/package/status validation; cross-engine tests; `just contract-test`; README and detailed raw contract guide. Existing M0/AI formats preserved.
 - **Verification performed:** `nix develop -c just contract-test` passed six contract tests; `nix develop -c just check` passed 14 Node tests (including actual Godot encoder run), gameplay smoke, zero TypeScript diagnostics and build. Godot headless editor import exited 0. Initial vector test int/float expectations and async-capable AJV getSchema typings were corrected; tests rerun successfully. No API calls.
@@ -141,6 +141,7 @@ Once the task is verified, preserve its implementation/verification notes under 
   - **Verified:** `nix develop -c just contract-test` passed six tests, including actual pinned Godot serialization consumed by Node. `nix develop -c just check` passed all 14 Node tests, gameplay regression, zero TypeScript diagnostics and build. `nix develop -c godot --headless --path demo --editor --import --quit` exited 0, generating tracked UIDs. Tests cover JSON round trips, vectors/scalars/tag collisions, unsupported/freed objects, non-finite/unsafe numbers, cycles and depth/item/node/UTF-8 byte limits; malformed schema/paths/UTC dates, clock regressions across null gaps, IDs/registration/source/count/anchor invariants and incomplete-state diagnostics.
   - **Decisions:** Raw versions are independent of AI contract versions; UUID v4 session identity, contiguous evt-N event sequence and stable session-local reg-N/src-N IDs. Keep wall/simulation/process/physics clocks separate and synchronization unknown until an explicit measured anchor exists. Dictionary wrappers avoid tag collisions; unsupported values are markers, not null. Bounds: depth 6, 256 logical values, 64 items, 1,024-character strings, 8 KiB payloads, 16 KiB event lines, 256 KiB manifests, 10,000 events / 16 MiB logs. Details and source APIs in `contracts/README.md`.
   - **Failures corrected / limitations:** First run had 13/14 passing tests because Godot dictionary equality distinguishes numeric variant types; corrected vector test expectations. Type check caught async-capable AJV lookup typing; switched to synchronous compile-time validators. Node validates declared contracts and lexical paths, not actual media files/symlinks or visual synchronization; those remain M1.6/M2.1. Fixtures contain no media and demonstrate no model performance. Original M0 probe data is unchanged. No paid call made.
+  - **Recovery commit:** `d370412`; includes M0 owner approval and M1.1 implementation/tests/docs. Staged file scope and loaded-credential absence checked; no generated recordings or private artifacts committed.
 - [ ] **M1.2 — Implement runtime collection lifecycle**
   - **Deliver:** Godot runtime component that creates/receives a session ID, writes append-only events, flushes cleanly, and preserves partial outputs on interruption where practical. Store UTC start time, frame/simulation timing and capture/debug metadata.
   - **Done when:** Two separate runs produce distinct session directories with coherent manifests/events; premature exit is recognizable, not silently reported as a completed recording.
@@ -325,7 +326,7 @@ Maintain this section whenever an implementation decision changes the path forwa
 
 ### Latest handoff
 
-- **Last completed task:** M1.1 portable session/event contracts and bounded serialization, following owner approval of M0. Prior tooling commit `dd8fb1f`; real API smoke `a8aa2bc`.
+- **Last completed task:** M1.1 portable session/event contracts and bounded serialization (`d370412`), following owner approval of M0. Prior tooling commit `dd8fb1f`; real API smoke `a8aa2bc`.
 - **Next recommended task:** M1.2 runtime collection lifecycle; write active checkpoint before editing. No repeat paid smoke needed.
 - **Pending owner verification:** M0 approved by owner on 2026-10-28. Future M1 exit gate remains unchecked; do not infer integrated capture approval from M0 evidence.
 - **Known failures / deferred work:** Old crop disclosed to model; headless editor probe shutdown leak diagnostics remain. Initial M0.5 Node type/return-type errors corrected before live call. No extra live error tests or six-session evaluation performed. Optional SAM and distribution packaging remain unstarted.
