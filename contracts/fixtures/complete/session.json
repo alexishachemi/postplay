@@ -1,0 +1,19 @@
+{
+  "schema_version": "1",
+  "session_id": "11111111-1111-4111-8111-111111111111",
+  "project": { "id": "fixture-demo", "name": "Synthetic contract fixture", "scene": "main.tscn" },
+  "godot_version": "4.7.2-stable",
+  "status": "complete",
+  "started_at_utc": "2026-10-28T12:00:00Z",
+  "ended_at_utc": "2026-10-28T12:00:04Z",
+  "capture": { "mode": "movie_maker", "video_path": "recording.avi", "format": "avi", "fps": 30, "width": 960, "height": 540, "duration_ms": 2000, "collision_debug": false },
+  "telemetry": { "path": "events.jsonl", "event_count": 3, "truncated": false },
+  "synchronization": {
+    "status": "approximate", "estimated_error_ms": 34,
+    "anchor": { "event_id": "evt-3", "clock": "process_frame", "recorded_value": 30, "video_ms": 1000 },
+    "notes": ["Synthetic fixture anchor, not a measured recording."]
+  },
+  "registrations": [
+    { "id": "reg-1", "kind": "signal", "source": { "id": "src-1", "label": "Player", "node_path": "Player" }, "description": "Existing game signal", "expected_behavior": null }
+  ]
+}

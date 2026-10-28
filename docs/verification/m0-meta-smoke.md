@@ -97,8 +97,9 @@ the addon still needs launch/stop/failure restoration integration in M1.5.
 The editor API probe's shutdown leak diagnostics remain documented in README.
 SAM and distribution packaging remain unstarted and optional/secondary.
 
-Next implementation work is M1.1's portable session/event contracts. The M0 owner
-exit gate remains pending owner review of this evidence; it is not certified here.
+At implementation handoff, M0's owner exit gate was left pending review of this
+evidence. On 2026-10-28 the owner explicitly approved M0 after clarification of the
+real response requirement, and authorized M1.1. Approval is recorded in TASKS.md.
 
 Official request references: [Responses schema](https://dev.meta.ai/docs/api-reference/responses/schemas),
 [video input](https://dev.meta.ai/docs/video-understanding),

@@ -53,6 +53,7 @@ Godot/Node/FFmpeg prerequisites.
 | `just record` | Human recording in a fresh `recordings/capture-*` directory; Escape finishes |
 | `just check` | Node tests, Godot smoke test, TypeScript checks and build; no API calls |
 | `just test` / `just smoke-test` | Run Node tests / deterministic Godot smoke test |
+| `just contract-test` | Raw session/event contracts, fixtures and Godot-to-Node serialization checks |
 | `just nix-check` | Evaluate the flake outputs |
 | `just probe VIDEO` | Inspect media metadata |
 | `just convert VIDEO OUTPUT.mp4` | Convert without overwriting an existing output |
@@ -65,6 +66,10 @@ directory. Quote paths containing spaces. `smoke-prepare` remains specific to
 the measured M0 capture, as described below. `smoke-analyze` requires the key in
 the environment and retains the CLI's replay guard. Default listing, tests and
 preparation do not upload anything.
+
+M0 is approved by the owner. M1's [portable raw capture contracts](contracts/README.md)
+now define `session.json`/`events.jsonl` and bounded safe values. Runtime capture
+integration is still to follow; the M0 smoke telemetry keeps its separate format.
 
 ## Initial application skeletons
 

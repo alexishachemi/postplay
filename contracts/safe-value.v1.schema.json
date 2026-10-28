@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://postplay.local/contracts/safe-value.v1",
+  "$ref": "#/$defs/value",
+  "$defs": {
+    "number": { "type": "number", "minimum": -9007199254740991, "maximum": 9007199254740991 },
+    "value": {
+      "anyOf": [
+        { "type": "null" },
+        { "type": "boolean" },
+        { "$ref": "#/$defs/number" },
+        { "type": "string", "maxLength": 1024 },
+        { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/value" } },
+        {
+          "type": "object", "additionalProperties": false,
+          "properties": { "type": { "const": "Vector2" }, "x": { "$ref": "#/$defs/number" }, "y": { "$ref": "#/$defs/number" } },
+          "required": ["type", "x", "y"]
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "properties": { "type": { "const": "Vector3" }, "x": { "$ref": "#/$defs/number" }, "y": { "$ref": "#/$defs/number" }, "z": { "$ref": "#/$defs/number" } },
+          "required": ["type", "x", "y", "z"]
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "properties": {
+            "type": { "const": "dictionary" },
+            "entries": { "type": "object", "maxProperties": 64, "propertyNames": { "maxLength": 128 }, "additionalProperties": { "$ref": "#/$defs/value" } }
+          },
+          "required": ["type", "entries"]
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "properties": {
+            "type": { "const": "unsupported" },
+            "reason": { "enum": ["unsupported_type", "non_finite", "number_range", "string_limit", "key_limit", "unsupported_key", "collection_limit", "depth_limit", "node_limit", "payload_limit", "cycle"] }
+          },
+          "required": ["type", "reason"]
+        }
+      ]
+    }
+  }
+}

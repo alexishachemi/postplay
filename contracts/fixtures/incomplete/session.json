@@ -1,0 +1,13 @@
+{
+  "schema_version": "1",
+  "session_id": "22222222-2222-4222-8222-222222222222",
+  "project": { "id": "fixture-demo", "name": "Synthetic interrupted fixture", "scene": "main.tscn" },
+  "godot_version": "4.7.2-stable",
+  "status": "incomplete",
+  "started_at_utc": "2026-10-28T12:00:00Z",
+  "ended_at_utc": null,
+  "capture": { "mode": "movie_maker", "video_path": null, "format": "avi", "fps": 30, "width": 960, "height": 540, "duration_ms": null, "collision_debug": false },
+  "telemetry": { "path": "events.jsonl", "event_count": 0, "truncated": false },
+  "synchronization": { "status": "unknown", "estimated_error_ms": null, "anchor": null, "notes": ["Synthetic interrupted capture; media finalization unknown."] },
+  "registrations": []
+}

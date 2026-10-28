@@ -38,15 +38,15 @@ Do not insert example results like these until they have actually occurred. The 
 
 **This is the first place Codex checks when asked to resume.** Maintain **one active task at a time**. Write the task ID and next action **before making substantive code changes**; update this short record at meaningful boundaries. The checklist below remains the source of **verified completion**, not this checkpoint.
 
-- **Task:** None — owner-requested justfile tooling follow-up complete.
-- **Status:** Ready for M1.1; M0 owner review remains pending.
-- **Last checkpoint:** 2026-10-28 — justfile follow-up committed as `dd8fb1f`; staged diff reviewed; tracked working tree clean. M1.1 remains unstarted.
-- **Objective:** Add discoverable recipes for existing demo/app/test/media/smoke workflows, preserving explicit paid analysis and no-overwrite behavior.
-- **Progress actually saved:** Root justfile covers app/demo/editor, unique recording directories, deterministic tests/check/build, Nix evaluation, media conversion/probing/timing, local smoke preparation and explicit paid analysis. Added pkgs.just without changing lock or supplied Godot derivation. README lists commands and corrects stale pre-M0.5 API statement.
-- **Verification performed:** `nix develop -c just --list`, `just --fmt --check`, `just check`, `just nix-check`, `just demo --headless --quit-after 2`, probe from repo and app subdirectory, timing of original clip, and local smoke preparation with a spaced output path passed. `just app` served expected HTTP 200 page and `just app-stop` stopped that newly started server. Convert succeeded with spaced paths; repeated FFmpeg invocation refused overwrite but returned 0 on this build, so added an explicit recipe guard for a failing exit status. Paid analysis, GUI editor and interactive record recipes only dry-run; no model call made.
-- **Files changed / artifacts to inspect:** `justfile`, `flake.nix`, `README.md`; ignored local preparation/conversion under `artifacts/just-smoke local/`.
-- **Next exact action:** On resumption, establish M1.1 checkpoint and implement raw-session/event contracts. No paid request is needed for the tooling follow-up.
-- **Blockers / owner action:** No implementation blocker identified. M0 owner gate remains unchecked. Original clip lacks HUD; coverage limitation preserved in request/result and verification record. No bug-detection/evaluation claims made.
+- **Task:** None — M1.1 verified; next is M1.2 runtime collection lifecycle.
+- **Status:** Ready for M1.2.
+- **Last checkpoint:** 2026-10-28 — raw v1 contracts and cross-engine checks verified; final commit being prepared.
+- **Objective:** Versioned manifest/event schemas, bounded Godot safe-value serializer, strict Node contract validation, documented clocks/status/IDs and deterministic cross-engine fixtures/tests.
+- **Progress actually saved:** Three schemas and synthetic complete/incomplete packages under `contracts/`; bounded native Godot encoder/UUID helper; pure Node schema/JSONL/package/status validation; cross-engine tests; `just contract-test`; README and detailed raw contract guide. Existing M0/AI formats preserved.
+- **Verification performed:** `nix develop -c just contract-test` passed six contract tests; `nix develop -c just check` passed 14 Node tests (including actual Godot encoder run), gameplay smoke, zero TypeScript diagnostics and build. Godot headless editor import exited 0. Initial vector test int/float expectations and async-capable AJV getSchema typings were corrected; tests rerun successfully. No API calls.
+- **Files changed / artifacts to inspect:** `contracts/`, `demo/addons/postplay/safe_value.gd` and UID, `demo/tests/contract_test.gd` and UID, `app/src/server/session-contract.ts`, `app/tests/session-contract.test.ts`, `justfile`, README, TASKS.md. Planning files are now tracked in Git; earlier M0.1 local-exclusion note describes the historical state.
+- **Next exact action:** Start M1.2 checkpoint, inspect committed contracts/serializer and implement unique session creation, append-only logging, flush/finalization and explicit interrupted-state handling. No runtime collector integration or real v1 capture is claimed yet.
+- **Blockers / owner action:** None identified. M0 is owner-approved; M1 exit gate remains pending implementation and owner verification. No paid call needed.
 
 When in progress, replace the placeholders with concise facts. **Do not put speculative claims here.** Distinguish completed implementation, tests actually run, and pending tests. A checkpoint may lag behind abrupt changes: on resume inspect staged/unstaged/untracked files, relevant commits, and test artifacts, then reconcile and update this section before continuing. Check for an existing output before repeating paid Meta API operations.
 
@@ -56,8 +56,8 @@ Once the task is verified, preserve its implementation/verification notes under 
 
 | Milestone | Priority | Status | Exit evidence |
 | --- | --- | --- | --- |
-| **M0 — Prove dependencies** | Critical | Awaiting verification | M0.1–M0.6 verified; real Muse proposal and deleted upload; owner exit-gate review pending |
-| **M1 — Capture a portable session** | Critical | Not started | Real session with video, event data, and validated time alignment |
+| **M0 — Prove dependencies** | Critical | Verified | M0.1–M0.6 verified; owner explicitly approved exit gate on 2026-10-28 |
+| **M1 — Capture a portable session** | Critical | In progress | M1.1 contracts verified; real capture/time-alignment exit evidence still pending |
 | **M2 — Analyze end-to-end** | Critical | Not started | Actual model-backed validated report or explicit analysis failure, saved locally |
 | **M3 — Review locally** | Critical | Not started | User can select a finding and inspect synchronized video + telemetry |
 | **M4 — Controlled demo and evaluation** | Essential | Not started | Three buggy/clean pairs captured, analyzed, and honestly evaluated |
@@ -65,7 +65,7 @@ Once the task is verified, preserve its implementation/verification notes under 
 
 **Delivery strategy:** Build the smallest record → analyze → review vertical slice before elaborating the demo or dashboard. Start a **minimal test scene in M0** so video and the real model can be exercised immediately; expand it into the three-scenario game in M4. Do not wait until M4 to collect the first real clip. Reserve the final development margin for fixes and submission rather than optional features.
 
-**Next task (only if no active work):** `M1.1` — define and test portable session/event contracts; M0 owner review remains separate and pending.
+**Next task (only if no active work):** `M1.2` — implement runtime collection lifecycle using the verified v1 contracts. M0 exit gate is approved.
 
 ## 3. M0 — Prove dependencies and integration feasibility
 
@@ -122,20 +122,25 @@ Once the task is verified, preserve its implementation/verification notes under 
 - [x] **M0.6 — Record the recording/API feasibility decision**
   - **Deliver:** A short conclusion in the decision log: Movie Maker usable or external-MP4 fallback; Meta API usable or blocker; proven formats and limits; immediate next steps.
   - **Done when:** Evidence for the choice is linked and the owner can assess it. A fallback must preserve telemetry/video alignment and the approved analysis goal.
-  - **Verified:** `docs/verification/m0-meta-smoke.md` links actual capture, timing, conversion, real strict-schema API response, usage and cleanup evidence. Continue Movie Maker and Muse Spark; no fallback triggered. M0 owner gate remains unchecked. Next: M1.1 raw portable contracts, then runtime addon work. SAM and distribution remain optional/secondary and unstarted.
+  - **Verified:** `docs/verification/m0-meta-smoke.md` links actual capture, timing, conversion, real strict-schema API response, usage and cleanup evidence. Continue Movie Maker and Muse Spark; no fallback triggered. M0 owner gate was left unchecked during implementation and explicitly approved by owner on 2026-10-28 (gate record below). Next: raw portable contracts, then runtime addon work. SAM and distribution remain optional/secondary and unstarted.
 
 **M0 exit gate — owner verification**
 
-- [ ] Confirm the Nix shell works with the supplied custom Godot package, the gameplay clip is playable, and a **real** model response has been produced (or flag a blocker rather than claiming success). Confirm the Movie Maker go/no-go decision.
+- [x] Confirm the Nix shell works with the supplied custom Godot package, the gameplay clip is playable, and a **real** model response has been produced (or flag a blocker rather than claiming success). Confirm the Movie Maker go/no-go decision.
+  - **Owner approval (2026-10-28):** After clarifying that the real Muse response (including a valid empty proposal) satisfied the API requirement, owner stated: "I'm satisfied. Mark M0 as aproved and move on to the next task." Gate approved by owner, not inferred from automated checks.
 
 ## 4. M1 — Godot addon and portable session capture
 
 **Goal:** A Godot developer can create a usable session without any web dashboard. The addon operates even with no optional instrumentation.
 
-- [ ] **M1.1 — Define and test versioned session/event contracts**
+- [x] **M1.1 — Define and test versioned session/event contracts**
   - **Deliver:** Documented `session.json` and `events.jsonl` shapes, stable session/event IDs, typed safe-value encoding, schema versions, relative media paths, supported time/frame fields, status transitions and representative fixtures.
   - **Done when:** Automated checks cover round-trip serialization, unsupported values, malformed records, bounded payloads, and incomplete sessions. No absolute path is embedded in a portable session.
   - **Try:** Open a sample session directory and read its manifest/events without PostPlay running.
+  - **Implemented:** `contracts/{session,event,safe-value}.v1.schema.json`, human-readable contract guide, synthetic complete/incomplete packages; native Godot safe-value encoder and UUID v4 helper; pure typed Node validators/JSONL serialization and cross-record checks; `just contract-test`. No session writer or runtime observer integration is claimed yet.
+  - **Verified:** `nix develop -c just contract-test` passed six tests, including actual pinned Godot serialization consumed by Node. `nix develop -c just check` passed all 14 Node tests, gameplay regression, zero TypeScript diagnostics and build. `nix develop -c godot --headless --path demo --editor --import --quit` exited 0, generating tracked UIDs. Tests cover JSON round trips, vectors/scalars/tag collisions, unsupported/freed objects, non-finite/unsafe numbers, cycles and depth/item/node/UTF-8 byte limits; malformed schema/paths/UTC dates, clock regressions across null gaps, IDs/registration/source/count/anchor invariants and incomplete-state diagnostics.
+  - **Decisions:** Raw versions are independent of AI contract versions; UUID v4 session identity, contiguous evt-N event sequence and stable session-local reg-N/src-N IDs. Keep wall/simulation/process/physics clocks separate and synchronization unknown until an explicit measured anchor exists. Dictionary wrappers avoid tag collisions; unsupported values are markers, not null. Bounds: depth 6, 256 logical values, 64 items, 1,024-character strings, 8 KiB payloads, 16 KiB event lines, 256 KiB manifests, 10,000 events / 16 MiB logs. Details and source APIs in `contracts/README.md`.
+  - **Failures corrected / limitations:** First run had 13/14 passing tests because Godot dictionary equality distinguishes numeric variant types; corrected vector test expectations. Type check caught async-capable AJV lookup typing; switched to synchronous compile-time validators. Node validates declared contracts and lexical paths, not actual media files/symlinks or visual synchronization; those remain M1.6/M2.1. Fixtures contain no media and demonstrate no model performance. Original M0 probe data is unchanged. No paid call made.
 - [ ] **M1.2 — Implement runtime collection lifecycle**
   - **Deliver:** Godot runtime component that creates/receives a session ID, writes append-only events, flushes cleanly, and preserves partial outputs on interruption where practical. Store UTC start time, frame/simulation timing and capture/debug metadata.
   - **Done when:** Two separate runs produce distinct session directories with coherent manifests/events; premature exit is recognizable, not silently reported as a completed recording.
@@ -315,14 +320,14 @@ Maintain this section whenever an implementation decision changes the path forwa
 ### Open blockers / questions for the owner
 
 - No current setup blocker; supplied `nix/godot.nix` inspected and shell verified in M0.1.
-- M0.5 credential prerequisite resolved by owner; key remains server-side and uncommitted. M0 owner exit-gate review pending.
+- M0.5 credential prerequisite resolved by owner; key remains server-side and uncommitted. M0 exit gate explicitly approved by owner on 2026-10-28.
 - Confirm any participant-portal-specific hackathon requirements during `M5.3` (earlier if a requirement changes the MVP).
 
 ### Latest handoff
 
-- **Last completed task:** Owner-requested justfile (`dd8fb1f`, M0.2 tooling follow-up), after M0.5/M0.6 (`a8aa2bc`); see M0.2 verification notes. M0.4 is `7f29f1a`.
-- **Next recommended task:** M1.1 portable session/event contracts; write active checkpoint before editing. No repeat paid smoke needed.
-- **Pending owner verification:** Review M0 evidence and confirm exit gate. Fresh human recording after viewport fix would confirm desktop behavior; short static render checks already pass. Owner gate remains unchecked.
+- **Last completed task:** M1.1 portable session/event contracts and bounded serialization, following owner approval of M0. Prior tooling commit `dd8fb1f`; real API smoke `a8aa2bc`.
+- **Next recommended task:** M1.2 runtime collection lifecycle; write active checkpoint before editing. No repeat paid smoke needed.
+- **Pending owner verification:** M0 approved by owner on 2026-10-28. Future M1 exit gate remains unchecked; do not infer integrated capture approval from M0 evidence.
 - **Known failures / deferred work:** Old crop disclosed to model; headless editor probe shutdown leak diagnostics remain. Initial M0.5 Node type/return-type errors corrected before live call. No extra live error tests or six-session evaluation performed. Optional SAM and distribution packaging remain unstarted.
 
 ---

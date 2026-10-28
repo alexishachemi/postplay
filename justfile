@@ -46,6 +46,10 @@ test:
 smoke-test:
     godot --headless --path demo --script res://tests/smoke_scene_test.gd
 
+# Validate raw session/event contracts, including a real Godot serializer round trip.
+contract-test:
+    node --test app/tests/session-contract.test.ts
+
 # Check strict TypeScript and Astro types.
 typecheck:
     npm --prefix app run check
