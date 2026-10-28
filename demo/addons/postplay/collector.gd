@@ -3,6 +3,7 @@ extends Node
 ## See docs/capture-runtime.md for lifecycle and recovery guarantees.
 
 const SafeValue = preload("res://addons/postplay/safe_value.gd")
+const Watchers = preload("res://addons/postplay/watchers.gd")
 const MAX_EVENTS := 10000
 const MAX_LOG_BYTES := 16777216
 const MAX_EVENT_BYTES := 16384
@@ -18,6 +19,29 @@ var _simulation_ms := 0.0
 var _checkpoint_elapsed := 0.0
 var _active := false
 var _used := false
+var _watchers: RefCounted
+
+
+func _init() -> void:
+	_watchers = Watchers.new(self)
+
+
+## Observe an existing signal (0–8 arguments). Returns reg-N, or empty on failure.
+func watch_signal(observed: Signal, description: String, expected_behavior: String = "") -> String:
+	return _watchers.watch_signal(observed, description, expected_behavior) if _active else ""
+
+
+## Initial value + changed samples, at 50–60000 ms simulation intervals.
+func watch_property(target: Variant, property_path: String, description: String, interval_ms: int = 100, expected_behavior: String = "") -> String:
+	# A typed Object parameter rejects freed references before this guard can run.
+	if typeof(target) != TYPE_OBJECT or not is_instance_valid(target):
+		return ""
+	return _watchers.watch_property(target, property_path, description, interval_ms, expected_behavior) if _active else ""
+
+
+## Stop observing; historical metadata/events remain intact.
+func unwatch(registration_id: String) -> bool:
+	return _watchers.unwatch(registration_id)
 
 
 ## Must be in the scene tree. A collector owns exactly one new UUID directory.
@@ -77,6 +101,10 @@ func start_session(output_root: String, project: Dictionary, capture: Dictionary
 ## Append one bounded, JSON-safe observation. No raw input or object reflection.
 ## Rejected labels/kinds do not consume IDs; limits stop collection and flag truncation.
 func append_event(kind: String, label: String, payload: Variant = null) -> Error:
+	return _append_event(kind, label, payload)
+
+
+func _append_event(kind: String, label: String, payload: Variant = null, registration: Dictionary = {}) -> Error:
 	if not _active:
 		return ERR_UNCONFIGURED
 	if kind not in EVENT_KINDS or label.is_empty() or label.length() > 256:
@@ -90,14 +118,15 @@ func append_event(kind: String, label: String, payload: Variant = null) -> Error
 		"time": {"wall_elapsed_ms": Time.get_ticks_msec() - _started_ticks,
 			"simulation_ms": _simulation_ms, "process_frame": Engine.get_process_frames(),
 			"physics_frame": Engine.get_physics_frames()},
-		"registration_id": null,
-		"source": {"id": "src-1", "label": "PostPlay runtime", "node_path": null},
+		"registration_id": registration.get("id"),
+		"source": registration.get("source", {"id": "src-1", "label": "PostPlay runtime", "node_path": null}),
 		"label": label, "payload": SafeValue.encode_payload(payload)
 	}
 	var line := JSON.stringify(event, "", true, true) + "\n"
 	var bytes := line.to_utf8_buffer()
 	if sequence > MAX_EVENTS or bytes.size() > MAX_EVENT_BYTES or _events.get_position() + bytes.size() > MAX_LOG_BYTES:
 		_manifest.telemetry.truncated = true
+		_watchers.stop()
 		last_error = _write_manifest()
 		return ERR_OUT_OF_MEMORY if last_error == OK else last_error
 	_events.store_buffer(bytes)
@@ -106,6 +135,7 @@ func append_event(kind: String, label: String, payload: Variant = null) -> Error
 	if last_error != OK:
 		# A partial final line is preserved, not silently repaired or counted.
 		_active = false
+		_watchers.stop()
 		_events.close()
 		_events = null
 		return last_error
@@ -138,6 +168,7 @@ func abort_session() -> Error:
 func _close_capture(aborted: bool) -> Error:
 	if not _active:
 		return ERR_UNCONFIGURED
+	_watchers.stop()
 	var append_error := append_event("lifecycle", "capture_aborted" if aborted else "runtime_stopped")
 	if not _active:
 		return append_error
@@ -159,6 +190,7 @@ func _process(delta: float) -> void:
 	if not _active:
 		return
 	_simulation_ms += delta * 1000.0
+	_watchers.sample(delta)
 	_checkpoint_elapsed += delta
 	if _checkpoint_elapsed >= 1.0:
 		_checkpoint_elapsed = 0.0
@@ -168,6 +200,21 @@ func _process(delta: float) -> void:
 func _exit_tree() -> void:
 	if _active:
 		seal_for_finalization()
+	_watchers.stop()
+
+
+func _add_registration(kind: String, source: Dictionary, description: String, expected_behavior: String) -> Dictionary:
+	if not _active or source.is_empty() or _manifest.telemetry.truncated or _manifest.registrations.size() >= 128:
+		return {}
+	var registration := {"id": "reg-%d" % (_manifest.registrations.size() + 1),
+		"kind": kind, "source": source.duplicate(), "description": description,
+		"expected_behavior": null if expected_behavior.is_empty() else expected_behavior}
+	_manifest.registrations.append(registration)
+	# Never emit references to a registration that hasn't reached disk.
+	if checkpoint() != OK:
+		_manifest.registrations.pop_back()
+		return {}
+	return registration
 
 
 func _write_manifest() -> Error:

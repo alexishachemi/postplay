@@ -55,6 +55,7 @@ Godot/Node/FFmpeg prerequisites.
 | `just test` / `just smoke-test` | Run Node tests / deterministic Godot smoke test |
 | `just contract-test` | Raw session/event contracts, fixtures and Godot-to-Node serialization checks |
 | `just capture-test` | Godot runtime lifecycle, limits and forced-exit recovery; synthetic data only |
+| `just watch-test` | Existing signals/properties, safe sampling and cleanup in Godot |
 | `just nix-check` | Evaluate the flake outputs |
 | `just probe VIDEO` | Inspect media metadata |
 | `just convert VIDEO OUTPUT.mp4` | Convert without overwriting an existing output |
@@ -70,8 +71,9 @@ preparation do not upload anything.
 
 M0 is approved by the owner. M1's [portable raw capture contracts](contracts/README.md)
 now define `session.json`/`events.jsonl` and bounded safe values. The reusable
-[runtime collector](docs/capture-runtime.md) writes these packages; editor wiring,
-media finalization and observation APIs are still to follow. The M0 smoke telemetry
+[runtime collector](docs/capture-runtime.md) writes these packages and watches
+existing signals/properties; editor wiring, media finalization and generic
+input/position observation are still to follow. The M0 smoke telemetry
 keeps its separate format.
 
 ## Initial application skeletons

@@ -54,6 +54,10 @@ contract-test:
 capture-test:
     node --test app/tests/collector.test.ts
 
+# Exercise existing signal/property watches in actual Godot; no remote requests.
+watch-test:
+    node --test app/tests/watchers.test.ts
+
 # Check strict TypeScript and Astro types.
 typecheck:
     npm --prefix app run check
