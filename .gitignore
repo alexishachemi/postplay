@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.astro/
+.godot/
+.env
+.env.*
+!.env.example
+sessions/
+recordings/
+artifacts/
+*.avi
+*.ogv
+*.mp4
+*.wav
+result
+result-*
+*.log

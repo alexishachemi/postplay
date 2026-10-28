@@ -1,0 +1,24 @@
+{
+  "name": "postplay",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=24.21.0 <25" },
+  "packageManager": "npm@11.19.0",
+  "scripts": {
+    "dev": "astro dev --host 127.0.0.1",
+    "check": "astro check",
+    "build": "astro build",
+    "start": "HOST=127.0.0.1 node dist/server/entry.mjs"
+  },
+  "dependencies": {
+    "astro": "7.4.4",
+    "@astrojs/node": "11.1.9",
+    "@tailwindcss/vite": "4.3.3",
+    "tailwindcss": "4.3.3"
+  },
+  "devDependencies": {
+    "@astrojs/check": "0.9.12",
+    "typescript": "6.0.3"
+  }
+}
