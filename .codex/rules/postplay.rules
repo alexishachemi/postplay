@@ -1,0 +1,38 @@
+# Codex execpolicy rules. This is a defense in depth and does not substitute
+# for the network allowlist or absence of remote-push credentials.
+
+prefix_rule(
+    pattern = ["git", "push"],
+    decision = "forbidden",
+    justification = "Never publish PostPlay commits. The owner alone performs remote pushes.",
+    match = ["git push", "git push origin main", "git push --force-with-lease"],
+    not_match = ["git add file.gd", "git commit -m change", "git status"],
+)
+
+prefix_rule(
+    pattern = ["git", "send-pack"],
+    decision = "forbidden",
+    justification = "Direct Git pack submission is remote publication; only the owner may push.",
+    match = ["git send-pack origin refs/heads/main"],
+)
+
+prefix_rule(
+    pattern = ["gh", "repo", "sync"],
+    decision = "forbidden",
+    justification = "Remote repository synchronization is owner-only.",
+    match = ["gh repo sync"],
+)
+
+prefix_rule(
+    pattern = ["gh", "pr", "create"],
+    decision = "forbidden",
+    justification = "Opening remote pull requests is owner-only.",
+    match = ["gh pr create"],
+)
+
+prefix_rule(
+    pattern = ["gh", "release", "create"],
+    decision = "forbidden",
+    justification = "Creating remote releases is owner-only.",
+    match = ["gh release create v0.1.0"],
+)

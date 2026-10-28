@@ -1,0 +1,30 @@
+# Project-local Codex config. Applies only after this repository is trusted.
+# Do not combine permission profiles with legacy sandbox_mode settings or --sandbox flags.
+approval_policy = "on-request"
+default_permissions = "postplay"
+
+[features]
+network_proxy = true
+
+[permissions.postplay]
+description = "PostPlay local development, local Git commits, and narrow network access"
+extends = ":workspace"
+
+# The built-in :workspace profile protects .git as read-only by default.
+# Override only this path so git add / git commit can update local history.
+# Other protected paths (.codex, .agents, .aws) retain their protections.
+[permissions.postplay.filesystem.":workspace_roots"]
+".git" = "write"
+
+[permissions.postplay.network]
+enabled = true
+
+# Only known package/API endpoints and local dashboard loopback are reachable.
+# No github.com, gitlab.com, etc. direct remote publishing domains.
+# Nix daemon substituters/fetchers may need separate host-side access.
+[permissions.postplay.network.domains]
+"127.0.0.1" = "allow"
+"localhost" = "allow"
+"api.meta.ai" = "allow"
+"registry.npmjs.org" = "allow"
+"cache.nixos.org" = "allow"
