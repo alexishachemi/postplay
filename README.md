@@ -55,14 +55,58 @@ its development server in the background; stop it from `app/` with
 `npx astro dev stop`. The production server starts after a build with
 `npm --prefix app start`, also bound to loopback by default.
 
-The demo currently loads a placeholder scene and an enabled addon skeleton.
+The demo has arrow-key movement and a beacon activated with Space/Enter. Each
+activation increments the visible counter, changes the beacon color, and flashes
+a stripe for half a simulation second. Escape finishes the run. The enabled
+addon remains a skeleton; the smoke telemetry probe is separate from its API.
 For a noninteractive parse/load check:
 
 ```sh
 godot --headless --path demo --editor --import --quit
 godot --headless --path demo --quit-after 2
+godot --headless --path demo --script res://tests/smoke_scene_test.gd
 ```
 
 Godot's `.godot/` cache, Node dependencies/build output, local sessions,
 recordings and `.env` files are ignored. Keep generated GDScript `.uid` files
 in Git to preserve resource identity. There is no model upload action yet.
+
+## Human recording feasibility check (M0.3–M0.4 pending)
+
+From the repository root inside `nix develop`:
+
+```sh
+mkdir -p recordings
+POSTPLAY_SMOKE_OUTPUT="$PWD/recordings" godot --path demo \
+  --write-movie "$PWD/recordings/smoke-01.avi" --fixed-fps 30
+```
+
+Use a **new movie filename each time**: direct Godot Movie Maker invocation can
+overwrite that path. Play for 30–120 seconds, move with the arrows, and activate
+the beacon several times. Note whether controls remain responsive, then press
+Escape to finalize. Movie Maker may be slower than real time and may not play
+audible sound during capture. This scene intentionally has no audio content.
+
+The optional probe creates a fresh `recordings/smoke-<date>-<random>/` directory
+with `smoke-events.jsonl`. It records simulation milliseconds, process/physics
+frames, interaction counts and position samples (at most 10 Hz), capped at 2,400
+events with a `probe_limit` marker. It does not collect typed text. These are
+**smoke probe data**, not the future portable session format. An absent `end`
+event or a present `probe_limit` marker means coverage is incomplete.
+Synchronization is explicitly unknown until a visible beacon activation is
+measured against the video.
+
+Inspect and convert the completed recording, preserving the original:
+
+```sh
+ffprobe -v error -show_entries format=duration:stream=codec_name,width,height,r_frame_rate -of json recordings/smoke-01.avi
+ffmpeg -n -i recordings/smoke-01.avi -an -c:v libx264 -pix_fmt yuv420p -movflags +faststart recordings/smoke-01.mp4
+```
+
+Open the MP4 in a local player/browser. Record capture responsiveness, duration,
+whether the flash/counter are visible, and the first flash's video time against
+the matching `beacon_activated` telemetry. The target alignment is about 0.5 s;
+do not assume `simulation_ms` already equals encoded video time. No real human
+recording, playback, editor Movie Maker restoration, or Meta call has yet been
+verified. See [Godot's Movie Maker documentation](https://docs.godotengine.org/en/stable/tutorials/animation/creating_movies.html)
+for the upstream recording controls and limitations.
