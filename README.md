@@ -69,7 +69,32 @@ godot --headless --path demo --script res://tests/smoke_scene_test.gd
 
 Godot's `.godot/` cache, Node dependencies/build output, local sessions,
 recordings and `.env` files are ignored. Keep generated GDScript `.uid` files
-in Git to preserve resource identity. There is no model upload action yet.
+in Git to preserve resource identity. Dashboard analysis is not implemented yet;
+the explicit server-side smoke command below is available.
+
+## Real Muse compatibility smoke
+
+M0.5 produced a real schema-valid Muse Spark response from a human gameplay
+excerpt plus telemetry. It returned no supported findings, with coverage limits;
+the remote upload was deleted. See the [verification record](docs/verification/m0-meta-smoke.md)
+for inputs, usage, limitations, saved artifacts and reproduction commands.
+
+`node app/scripts/meta-smoke.ts prepare VIDEO SMOKE_JSONL NEW_DIRECTORY` prepares
+the measured smoke capture's seconds 30–60 locally. Only
+`node --use-env-proxy app/scripts/meta-smoke.ts analyze DIRECTORY --upload-to-meta`
+uploads the prepared clip and context to Meta and makes one Standard-mode
+`muse-spark-1.3` request. It needs `MODEL_API_KEY` in that process's environment.
+Never place the key in command arguments, browser code, Git or chat. Existing
+run directories cannot be analyzed again; inspect prior results before creating
+another paid run. Limits are 30 seconds, 20 MB video, 96 KB context and 4,096
+output tokens, with no automatic retries. Model proposals remain separate from
+final validated M2 reports. Cleanup failures are saved separately from inference
+outcomes and must be inspected.
+
+Run deterministic server tests with `npm --prefix app test`. They make no API
+calls. The smoke CLI is a development tool for this specific measured capture;
+general ingestion, budget UX and final report storage remain M1/M2 work.
+Development scripts disable Astro's optional framework telemetry.
 
 ## Recording smoke check
 
