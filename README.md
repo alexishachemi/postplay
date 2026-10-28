@@ -20,7 +20,7 @@ ffprobe -version
 ```
 
 The flake provides the custom Godot editor, Node.js 24 with npm, FFmpeg/FFprobe,
-Git, and nixfmt. `flake.lock` pins nixpkgs; the supplied Godot derivation pins
+Git, just, and nixfmt. `flake.lock` pins nixpkgs; the supplied Godot derivation pins
 its upstream binary and hash. npm is the selected JavaScript package manager;
 `app/package-lock.json` pins the application dependencies.
 
@@ -36,6 +36,35 @@ Keep `MODEL_API_KEY` in the local environment only. Never put credentials in
 Nix expressions or Git. No model requests are made by entering the shell.
 Dashboard packaging (`nix build` / `nix run`) and addon archives are not yet
 implemented.
+
+## Common development commands
+
+Enter `nix develop`, then run `just` to list recipes. You can also use
+`nix develop -c just RECIPE` directly. The recipes use the repository root even
+when invoked from a subdirectory. Without Nix, install `just` alongside the
+Godot/Node/FFmpeg prerequisites.
+
+| Command | Purpose |
+| --- | --- |
+| `just install` | Install locked npm dependencies |
+| `just demo` / `just editor` | Launch the demo / Godot editor |
+| `just app` / `just app-stop` | Start / stop the background Astro dev server |
+| `just build` / `just app-start` | Build / run the foreground production server |
+| `just record` | Human recording in a fresh `recordings/capture-*` directory; Escape finishes |
+| `just check` | Node tests, Godot smoke test, TypeScript checks and build; no API calls |
+| `just test` / `just smoke-test` | Run Node tests / deterministic Godot smoke test |
+| `just nix-check` | Evaluate the flake outputs |
+| `just probe VIDEO` | Inspect media metadata |
+| `just convert VIDEO OUTPUT.mp4` | Convert without overwriting an existing output |
+| `just timing VIDEO PROBE_JSONL [X Y]` | Measure this smoke scene's beacon timing |
+| `just smoke-prepare VIDEO PROBE_JSONL NEW_DIRECTORY` | Prepare the measured M0 capture locally |
+| `just smoke-analyze DIRECTORY` | **Paid:** explicitly upload prepared media/context and call Meta once |
+
+`just record` creates `recording.avi` plus a fresh `smoke-*` telemetry child
+directory. Quote paths containing spaces. `smoke-prepare` remains specific to
+the measured M0 capture, as described below. `smoke-analyze` requires the key in
+the environment and retains the CLI's replay guard. Default listing, tests and
+preparation do not upload anything.
 
 ## Initial application skeletons
 
@@ -163,7 +192,7 @@ godot --headless --editor --path demo --script res://tests/movie_maker_api_probe
 The API probe verifies toggle restoration and launch/stop method availability;
 it does not launch a recording through the addon. On Godot 4.7.2, this headless
 editor-script probe exits 0 after its assertions but emits resource-leak diagnostics
-at shutdown. Full addon launch/restore remains M1.5 work. No Meta call has yet
-been verified. See [Godot's Movie Maker documentation](https://docs.godotengine.org/en/stable/tutorials/animation/creating_movies.html)
+at shutdown. Full addon launch/restore remains M1.5 work. The real Meta smoke
+is recorded separately above. See [Godot's Movie Maker documentation](https://docs.godotengine.org/en/stable/tutorials/animation/creating_movies.html)
 and [viewport scaling documentation](https://docs.godotengine.org/en/stable/tutorials/rendering/multiple_resolutions.html)
 for upstream recording controls and stretch modes.

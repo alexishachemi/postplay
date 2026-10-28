@@ -18,6 +18,7 @@
           pkgs.nodejs_24
           pkgs.ffmpeg
           pkgs.git
+          pkgs.just
           pkgs.nixfmt
         ];
       };
