@@ -71,7 +71,7 @@ Godot's `.godot/` cache, Node dependencies/build output, local sessions,
 recordings and `.env` files are ignored. Keep generated GDScript `.uid` files
 in Git to preserve resource identity. There is no model upload action yet.
 
-## Human recording feasibility check (M0.3–M0.4 pending)
+## Recording smoke check
 
 From the repository root inside `nix develop`:
 
@@ -106,7 +106,39 @@ ffmpeg -n -i recordings/smoke-01.avi -an -c:v libx264 -pix_fmt yuv420p -movflags
 Open the MP4 in a local player/browser. Record capture responsiveness, duration,
 whether the flash/counter are visible, and the first flash's video time against
 the matching `beacon_activated` telemetry. The target alignment is about 0.5 s;
-do not assume `simulation_ms` already equals encoded video time. No real human
-recording, playback, editor Movie Maker restoration, or Meta call has yet been
-verified. See [Godot's Movie Maker documentation](https://docs.godotengine.org/en/stable/tutorials/animation/creating_movies.html)
-for the upstream recording controls and limitations.
+do not assume `simulation_ms` already equals encoded video time.
+
+The first owner-recorded clip passed responsiveness/playback checks, but had an
+unintended vertical crop already present in the AVI, hiding the HUD. The demo
+now uses a fixed 960×540 viewport with preserved aspect ratio. Two-frame rendered
+checks at 960×540 and 1920×1080 window sizes produced identical, correctly framed
+video frames. The precise cause of the earlier capture's crop is not established;
+disabled stretching did make recorded layout depend on window size. Keep the
+original files, and use a new filename for future recordings after this fix.
+
+For this specific old clip, the beacon center is (760, 64) in encoded pixels.
+Its nine flashes matched their logged process frames, with a maximum observed
+simulation/video timestamp difference of 8.7 ms at 33.3 ms frame resolution:
+
+```sh
+node scripts/check-smoke-timing.mjs recordings/smoke-01.mp4 \
+  recordings/smoke-2026-10-28T22-04-14-ccf9e88303d7cf49/smoke-events.jsonl 760 64
+```
+
+For new, correctly framed 30 fps clips, omit the last two arguments to use the
+intended beacon center (760, 330). The script measures only this smoke scene's
+magenta transitions; it is not a bug detector or a universal synchronization map.
+
+The pinned editor's Movie Maker toggle and restoration can be probed with:
+
+```sh
+godot --headless --editor --path demo --script res://tests/movie_maker_api_probe.gd
+```
+
+The API probe verifies toggle restoration and launch/stop method availability;
+it does not launch a recording through the addon. On Godot 4.7.2, this headless
+editor-script probe exits 0 after its assertions but emits resource-leak diagnostics
+at shutdown. Full addon launch/restore remains M1.5 work. No Meta call has yet
+been verified. See [Godot's Movie Maker documentation](https://docs.godotengine.org/en/stable/tutorials/animation/creating_movies.html)
+and [viewport scaling documentation](https://docs.godotengine.org/en/stable/tutorials/rendering/multiple_resolutions.html)
+for upstream recording controls and stretch modes.
