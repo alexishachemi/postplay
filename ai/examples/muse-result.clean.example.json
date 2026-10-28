@@ -1,0 +1,8 @@
+{
+  "schema_version": "1",
+  "coverage_summary": "No sufficiently supported defect identified in the provided segment.",
+  "coverage_limitations": [
+    "Only selected telemetry was supplied; this is not proof that the game is bug-free."
+  ],
+  "findings": []
+}

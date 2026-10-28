@@ -1,0 +1,53 @@
+{
+  "schema_version": "1",
+  "coverage_summary": "Reviewed the supplied 42-second clip and five telemetry observations; most gameplay details are not instrumented.",
+  "coverage_limitations": [
+    "Only selected properties and one signal were available."
+  ],
+  "findings": [
+    {
+      "id": "f-1",
+      "category": "ui_state_mismatch",
+      "title": "Health display may remain stale after damage",
+      "severity": "medium",
+      "certainty": "medium",
+      "start_ms": 11200,
+      "end_ms": 12800,
+      "observed_behavior": "A damage signal is recorded, internal health drops from 5 to 4, but the sampled HUD value remains 5 at 12.8 seconds.",
+      "expected_behavior": "The HUD should reflect the current authoritative health after damage.",
+      "expected_source": "developer_expectation",
+      "expected_source_ref": "reg-damage",
+      "explanation": "The watched state and HUD value disagree after the damage event. Visual confirmation is needed to determine whether the displayed bar is also stale.",
+      "benign_alternatives": [
+        "The UI may intentionally animate or delay updates; no acceptable delay was declared."
+      ],
+      "evidence": [
+        {
+          "type": "telemetry",
+          "event_id": "evt-3",
+          "video_ms": null,
+          "observation": "Damage signal fired with amount 1."
+        },
+        {
+          "type": "telemetry",
+          "event_id": "evt-4",
+          "video_ms": null,
+          "observation": "Authoritative health became 4."
+        },
+        {
+          "type": "telemetry",
+          "event_id": "evt-5",
+          "video_ms": null,
+          "observation": "Sampled HUD value remained 5."
+        }
+      ],
+      "reproduction_steps": [
+        "In a similar gameplay state, take a single hit and compare the health bar with the internal health value."
+      ],
+      "limitations": [
+        "The fixture does not prove what the actual rendered HUD looked like.",
+        "The expected maximum UI update latency is unspecified."
+      ]
+    }
+  ]
+}

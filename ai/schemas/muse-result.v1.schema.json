@@ -1,0 +1,172 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "enum": [
+        "1"
+      ]
+    },
+    "coverage_summary": {
+      "type": "string"
+    },
+    "coverage_limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "ui_state_mismatch",
+              "out_of_bounds",
+              "softlock",
+              "other_technical"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "certainty": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "start_ms": {
+            "type": "integer"
+          },
+          "end_ms": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "observed_behavior": {
+            "type": "string"
+          },
+          "expected_behavior": {
+            "type": "string"
+          },
+          "expected_source": {
+            "type": "string",
+            "enum": [
+              "developer_expectation",
+              "observed_precedent",
+              "model_inference"
+            ]
+          },
+          "expected_source_ref": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "explanation": {
+            "type": "string"
+          },
+          "benign_alternatives": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "telemetry",
+                    "video"
+                  ]
+                },
+                "event_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "video_ms": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "observation": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "event_id",
+                "video_ms",
+                "observation"
+              ]
+            }
+          },
+          "reproduction_steps": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "limitations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "category",
+          "title",
+          "severity",
+          "certainty",
+          "start_ms",
+          "end_ms",
+          "observed_behavior",
+          "expected_behavior",
+          "expected_source",
+          "expected_source_ref",
+          "explanation",
+          "benign_alternatives",
+          "evidence",
+          "reproduction_steps",
+          "limitations"
+        ]
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "coverage_summary",
+    "coverage_limitations",
+    "findings"
+  ]
+}
