@@ -38,14 +38,14 @@ Do not insert example results like these until they have actually occurred. The 
 
 **This is the first place Codex checks when asked to resume.** Maintain **one active task at a time**. Write the task ID and next action **before making substantive code changes**; update this short record at meaningful boundaries. The checklist below remains the source of **verified completion**, not this checkpoint.
 
-- **Task:** None — M1.1 verified; next is M1.2 runtime collection lifecycle.
-- **Status:** Ready for M1.2.
-- **Last checkpoint:** 2026-10-28 — M1.1 implemented and verified in `d370412`; staged scope/credential check passed. Ready for M1.2.
-- **Objective:** Versioned manifest/event schemas, bounded Godot safe-value serializer, strict Node contract validation, documented clocks/status/IDs and deterministic cross-engine fixtures/tests.
-- **Progress actually saved:** Three schemas and synthetic complete/incomplete packages under `contracts/`; bounded native Godot encoder/UUID helper; pure Node schema/JSONL/package/status validation; cross-engine tests; `just contract-test`; README and detailed raw contract guide. Existing M0/AI formats preserved.
-- **Verification performed:** `nix develop -c just contract-test` passed six contract tests; `nix develop -c just check` passed 14 Node tests (including actual Godot encoder run), gameplay smoke, zero TypeScript diagnostics and build. Godot headless editor import exited 0. Initial vector test int/float expectations and async-capable AJV getSchema typings were corrected; tests rerun successfully. No API calls.
-- **Files changed / artifacts to inspect:** `contracts/`, `demo/addons/postplay/safe_value.gd` and UID, `demo/tests/contract_test.gd` and UID, `app/src/server/session-contract.ts`, `app/tests/session-contract.test.ts`, `justfile`, README, TASKS.md. Planning files are now tracked in Git; earlier M0.1 local-exclusion note describes the historical state.
-- **Next exact action:** Start M1.2 checkpoint, inspect committed contracts/serializer and implement unique session creation, append-only logging, flush/finalization and explicit interrupted-state handling. No runtime collector integration or real v1 capture is claimed yet.
+- **Task:** None — M1.2 verified; next is M1.3 signals/properties.
+- **Status:** Ready for M1.3; M1.2 complete.
+- **Last checkpoint:** 2026-10-29 — full `just check` passed 20 tests, gameplay smoke, strict types and build; final focused lifecycle rerun passed. Staged scope/diff reviewed and loaded-credential scan passed; no generated captures or private artifacts staged.
+- **Objective:** Create unique portable session directories, append/flush bounded events, checkpoint manifests and preserve recognizable interrupted captures without falsely declaring video complete.
+- **Progress actually saved:** Reusable runtime Node with exclusive UUID directory creation, initial/atomic checkpoint manifests, flushed append-only bounded events, separate clocks, orderly seal and explicit abort. Deterministic subprocess tests exercise two runs, supplied IDs/collision rejection, tree exit, count/byte truncation and SIGKILL; all output checked by M1.1 validators. Not yet installed as an autoload or connected to editor recording.
+- **Verification performed:** `nix develop -c just check` passed 20 Node tests (six real Godot lifecycle tests), gameplay smoke, zero TypeScript diagnostics and build. Headless editor import and `just --fmt --check` passed. Focused `just capture-test` rerun covers the final strict UUID match change. No API calls.
+- **Files changed / artifacts to inspect:** `demo/addons/postplay/collector.gd` and UID, `demo/tests/collector_test.gd` and UID, `app/tests/collector.test.ts`, `docs/capture-runtime.md`, `contracts/README.md`, README, `justfile`, TASKS.md; synthetic packages under `/tmp/postplay-collector-fixture-*` contain no recordings or timing evidence.
+- **Next exact action:** Establish a new M1.3 checkpoint before adding existing-signal/property watches and registration/source metadata. Keep media completion and addon/editor installation for M1.5.
 - **Blockers / owner action:** None identified. M0 is owner-approved; M1 exit gate remains pending implementation and owner verification. No paid call needed.
 
 When in progress, replace the placeholders with concise facts. **Do not put speculative claims here.** Distinguish completed implementation, tests actually run, and pending tests. A checkpoint may lag behind abrupt changes: on resume inspect staged/unstaged/untracked files, relevant commits, and test artifacts, then reconcile and update this section before continuing. Check for an existing output before repeating paid Meta API operations.
@@ -57,7 +57,7 @@ Once the task is verified, preserve its implementation/verification notes under 
 | Milestone | Priority | Status | Exit evidence |
 | --- | --- | --- | --- |
 | **M0 — Prove dependencies** | Critical | Verified | M0.1–M0.6 verified; owner explicitly approved exit gate on 2026-10-28 |
-| **M1 — Capture a portable session** | Critical | In progress | M1.1 contracts verified; real capture/time-alignment exit evidence still pending |
+| **M1 — Capture a portable session** | Critical | In progress | M1.1 contracts and M1.2 runtime lifecycle verified; integrated capture/time-alignment exit evidence still pending |
 | **M2 — Analyze end-to-end** | Critical | Not started | Actual model-backed validated report or explicit analysis failure, saved locally |
 | **M3 — Review locally** | Critical | Not started | User can select a finding and inspect synchronized video + telemetry |
 | **M4 — Controlled demo and evaluation** | Essential | Not started | Three buggy/clean pairs captured, analyzed, and honestly evaluated |
@@ -65,7 +65,7 @@ Once the task is verified, preserve its implementation/verification notes under 
 
 **Delivery strategy:** Build the smallest record → analyze → review vertical slice before elaborating the demo or dashboard. Start a **minimal test scene in M0** so video and the real model can be exercised immediately; expand it into the three-scenario game in M4. Do not wait until M4 to collect the first real clip. Reserve the final development margin for fixes and submission rather than optional features.
 
-**Next task (only if no active work):** `M1.2` — implement runtime collection lifecycle using the verified v1 contracts. M0 exit gate is approved.
+**Next task (only if no active work):** `M1.3` — watch existing signals and properties using the verified runtime collector. M0 exit gate is approved.
 
 ## 3. M0 — Prove dependencies and integration feasibility
 
@@ -142,10 +142,14 @@ Once the task is verified, preserve its implementation/verification notes under 
   - **Decisions:** Raw versions are independent of AI contract versions; UUID v4 session identity, contiguous evt-N event sequence and stable session-local reg-N/src-N IDs. Keep wall/simulation/process/physics clocks separate and synchronization unknown until an explicit measured anchor exists. Dictionary wrappers avoid tag collisions; unsupported values are markers, not null. Bounds: depth 6, 256 logical values, 64 items, 1,024-character strings, 8 KiB payloads, 16 KiB event lines, 256 KiB manifests, 10,000 events / 16 MiB logs. Details and source APIs in `contracts/README.md`.
   - **Failures corrected / limitations:** First run had 13/14 passing tests because Godot dictionary equality distinguishes numeric variant types; corrected vector test expectations. Type check caught async-capable AJV lookup typing; switched to synchronous compile-time validators. Node validates declared contracts and lexical paths, not actual media files/symlinks or visual synchronization; those remain M1.6/M2.1. Fixtures contain no media and demonstrate no model performance. Original M0 probe data is unchanged. No paid call made.
   - **Recovery commit:** `d370412`; includes M0 owner approval and M1.1 implementation/tests/docs. Staged file scope and loaded-credential absence checked; no generated recordings or private artifacts committed.
-- [ ] **M1.2 — Implement runtime collection lifecycle**
+- [x] **M1.2 — Implement runtime collection lifecycle**
   - **Deliver:** Godot runtime component that creates/receives a session ID, writes append-only events, flushes cleanly, and preserves partial outputs on interruption where practical. Store UTC start time, frame/simulation timing and capture/debug metadata.
   - **Done when:** Two separate runs produce distinct session directories with coherent manifests/events; premature exit is recognizable, not silently reported as a completed recording.
   - **Try:** Launch/stop twice and compare folders; deliberately interrupt one run to inspect its status.
+  - **Implemented:** `demo/addons/postplay/collector.gd`: exclusive new UUID directories (generated or supplied ID), append-only flushed JSONL, atomic manifest checkpoints, UTC/configured capture/debug metadata and independent timing clocks. Bounded payload/count/byte collection, explicit incomplete abort, orderly telemetry seal and scene-tree exit handling. API/recovery guide in `docs/capture-runtime.md`; `just capture-test` launches deterministic synthetic fixtures.
+  - **Verified (2026-10-29):** `nix develop -c just check` passed all 20 Node tests, Godot gameplay smoke, zero TypeScript diagnostics and app build. Six lifecycle tests validate actual Godot outputs using the Node contracts: two distinct runs; supplied IDs and byte-for-byte non-overwrite on collision; rejected settings/paths; explicit abort/tree exit; periodic checkpoint; 10,000-event/16-MiB caps; failed temporary-manifest write preserving prior manifest; real SIGKILL preserving two flushed events and status recording. Final `nix develop -c just capture-test` rerun passed all six after strict whole-UUID matching. Headless editor import, `just --fmt --check` and whitespace checks passed. No paid requests.
+  - **Try it:** `nix develop -c just capture-test`; inspect synthetic `/tmp/postplay-collector-fixture-*/*/{session.json,events.jsonl}`. Minimal game integration example and lifecycle methods are in the runtime guide.
+  - **Decision / limitations:** Runtime shutdown cannot establish that Movie Maker has finished encoding. Seal leaves recording explicitly unfinalized; only future editor-side media verification (M1.5) may finalize complete. Abort is terminal incomplete, never promoted. Writer is not yet installed as an autoload or connected to `just record`; M0 smoke data unchanged. Unknown sync is honest until M1.6. Crash recovery is best effort, not power-loss durability; write errors can leave lagging counts, pending files or broken tails, which must not be silently repaired. No actual v1 video capture or timing claim from these fixtures.
 - [ ] **M1.3 — Watch existing signals and properties**
   - **Deliver:** Documented `watch_signal` and `watch_property` API with expectation labels/descriptions, observed argument/property values, safe serialization, stable object labels, configurable bounded sampling, and safe disconnection/cleanup.
   - **Done when:** Existing game signals are recorded without modifying their emitters; property changes appear with useful times/values; freed objects and unsupported property values do not crash capture.
@@ -311,6 +315,7 @@ Maintain this section whenever an implementation decision changes the path forwa
 | --- | --- | --- | --- |
 | Video capture | Godot Movie Maker first | Unusable responsiveness, launch integration, or synchronization | **M0.4:** owner confirms responsive recording/playback; measured nine matching beacon frames. Continue with demo viewport fix; full addon orchestration remains M1.5 |
 | Recording fallback | External MP4 + explicit sync anchor allowed | Movie Maker gate fails | **Not invoked** |
+| Capture finalization | Runtime seals telemetry; editor verifies finalized media | M1.5 launch/stop integration | **M1.2:** normal tree exit stays explicitly unfinalized recording; abort marks incomplete. SIGKILL and failed manifest writes retain prior evidence; no runtime-only claim of completed video |
 | Model reasoning | Muse Spark required, AI-first | API access/media/schema limits or evidence quality | **M0.5:** one real MP4+telemetry strict-schema response validated with zero supported findings; Standard mode, deletion confirmed; compatibility demonstrated, detection quality unevaluated |
 | SAM 3.1 | Optional evidence tool | Core pipeline works and tracking clearly helps | **Not evaluated yet** |
 | Backend/data | Astro + Node/TypeScript; local JSON/JSONL | Concrete implementation blocker requiring architecture change | **No change approved** |
@@ -326,8 +331,8 @@ Maintain this section whenever an implementation decision changes the path forwa
 
 ### Latest handoff
 
-- **Last completed task:** M1.1 portable session/event contracts and bounded serialization (`d370412`), following owner approval of M0. Prior tooling commit `dd8fb1f`; real API smoke `a8aa2bc`.
-- **Next recommended task:** M1.2 runtime collection lifecycle; write active checkpoint before editing. No repeat paid smoke needed.
+- **Last completed task:** M1.2 runtime collection lifecycle; six real Godot lifecycle tests and full 20-test/type/build regression passed. M1.1 contracts in `d370412`; prior tooling `dd8fb1f`, real API smoke `a8aa2bc`.
+- **Next recommended task:** M1.3 existing-signal/property watches; write active checkpoint before editing. Runtime API/recovery documented in `docs/capture-runtime.md`; editor/autoload wiring and verified media completion remain M1.5. No repeat paid smoke needed.
 - **Pending owner verification:** M0 approved by owner on 2026-10-28. Future M1 exit gate remains unchecked; do not infer integrated capture approval from M0 evidence.
 - **Known failures / deferred work:** Old crop disclosed to model; headless editor probe shutdown leak diagnostics remain. Initial M0.5 Node type/return-type errors corrected before live call. No extra live error tests or six-session evaluation performed. Optional SAM and distribution packaging remain unstarted.
 

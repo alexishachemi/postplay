@@ -8,8 +8,9 @@ Schema `$id` URLs identify locally loaded schemas; validation never fetches them
 A package contains `session.json`, `events.jsonl` and the original video declared
 by `capture.video_path`. Derived videos and analysis outputs must preserve these
 originals and record their own conversion offsets/provenance. The contracts and
-pure validators are implemented in M1.1; runtime capture, filesystem/media checks
-and measured general synchronization are later M1/M2 tasks.
+pure validators are implemented in M1.1; the [runtime writer](../docs/capture-runtime.md)
+is implemented in M1.2. Editor integration, filesystem/media ingestion checks
+and measured general synchronization remain later M1/M2 tasks.
 
 ## Session manifest
 

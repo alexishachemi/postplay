@@ -50,6 +50,10 @@ smoke-test:
 contract-test:
     node --test app/tests/session-contract.test.ts
 
+# Exercise actual Godot session lifecycle, bounded logs and forced-exit recovery.
+capture-test:
+    node --test app/tests/collector.test.ts
+
 # Check strict TypeScript and Astro types.
 typecheck:
     npm --prefix app run check
