@@ -3,9 +3,9 @@
 M1.2 provides `demo/addons/postplay/collector.gd`, a runtime-only Node. It does
 not scan the scene, collect keyboard text, start Movie Maker or call a model.
 M1.3 adds existing-signal and property watches through `watchers.gd`.
+M1.4 adds selected action states and optional player/bounds/progression context.
 Editor/autoload installation and media finalization remain M1.5;
-input/position observation remains M1.4. `just record` still uses the separate
-M0 smoke probe, not this writer.
+`just record` still uses the separate M0 smoke probe, not this writer.
 
 ## Minimal usage
 
@@ -33,7 +33,9 @@ func _ready() -> void:
 `Error`. Root must resolve to an absolute writable directory (`user://` is fine).
 Project requires exactly `id`, `name`, and a relative `scene` without `res://`.
 Optional capture keys are `mode` (default `movie_maker`), `format` (`avi`), `fps`
-(30), `width` (960), `height` (540), `collision_debug` (false). Supply actual
+(30), `width` (960), `height` (540), `collision_debug` (current SceneTree debug
+collision hint). An explicit collision flag still overrides this default for the
+launch orchestrator; it must describe the actual run. Supply actual
 recording settings; these defaults are not engine auto-detection. External mode
 requires MP4. Invalid configuration is rejected before creating a session.
 
@@ -126,6 +128,85 @@ Stopping, aborting, leaving the tree, hitting capture limits or an event write
 failure disconnects owned signal callbacks and clears live watches. Existing
 game callbacks are left untouched. Metadata remains for offline evidence.
 
+## Selected actions and input privacy
+
+Without annotations, a session polls the existing `ui_left`, `ui_right`, `ui_up`,
+`ui_down`, `ui_accept`, `ui_cancel` actions every 50 simulation ms. Missing default
+actions are skipped. `capture_started.payload.input_policy` records the actual
+selected names, interval and best-effort limitations. No player discovery or
+scene scan is performed.
+
+`set_input_actions(actions, interval_ms = 50)` selects up to 32 unique, existing
+InputMap action names (ASCII identifiers/slashes/hyphens, 1–128 characters), at
+50–60,000-ms intervals. Returns a Godot Error; invalid configuration leaves the
+old selection intact. Successful configuration emits `input_configuration`.
+Pass `[]` to disable input observation. At most one polling batch runs per process
+frame, without catch-up bursts. Only changed boolean states are saved as `input`
+events labeled `action_state`, payload `{action, pressed}`, registration null.
+An action held when capture begins may first appear as pressed; this is not a
+claim that its press occurred at that instant.
+
+The observer never reads raw key codes, Unicode, text contents, mouse coordinates
+or event-object dumps. While a built-in LineEdit/TextEdit (including subclasses)
+owns focus in the collector's viewport, **all** selected action polling is
+suppressed and cached states are discarded. The next eligible poll records
+`input_coverage` with `resumed_after_text_focus`, then resumes state observation.
+Do not treat missing releases during the gap as held gameplay inputs. Other
+viewports/custom text widgets need explicit disabling via `set_input_actions([])`;
+do not configure actions whose names or meaning encode secret input.
+
+Polling sees Godot's global action state, not proof that the game handled an
+input. It does not consume events or interfere with existing gameplay handlers.
+Fast press/release pairs between polls, final quit inputs and keyboard ghosting
+may be missed. A sample after text focus is not a reconstruction of the omitted
+interval. No analog strength, typing history or exhaustive input replay is claimed.
+
+## Optional player, bounds and progression context
+
+```gdscript
+var player_watch := capture.set_player(player, 100) # global_position, world space
+var bounds_ref := capture.set_playable_bounds(
+    Rect2(0, 0, 960, 540), "Declared playable rectangle", "world")
+var progress_watch := capture.watch_progression(
+    door.opened, "Door opening observed", "Opening the door should permit progress")
+```
+
+- `set_player(target, interval_ms = 100, property_path = "global_position",
+  coordinate_space = "world")` returns a player registration ID or `""`. It
+  requires an in-tree Node with an existing Vector2/Vector3 property, using the
+  same explicit paths, intervals, weak identity and cleanup as property watches. Emits an initial
+  `position` event and periodic samples **including unchanged positions**. Payload:
+  `property`, `phase` (`initial`/`sample`), `position`, `coordinate_space`.
+  Existing live target/path registrations are reused; the first configuration
+  wins. Use `unwatch` to stop. Invalidated, detached or freed targets are removed
+  safely rather than querying an invalid world transform.
+- `set_playable_bounds(rect_or_aabb, description = "Declared playable region",
+  coordinate_space = "world")` returns a bounds registration ID or `""`. Accepts
+  positive-size finite Rect2/AABB within safe numeric bounds, normalizes position
+  and size to Vector2/Vector3, and emits `annotation` / `playable_bounds`. Each
+  successful declaration is a new historical registration, allowing later bounds
+  updates without rewriting evidence. It does not scan colliders or infer a region.
+- `watch_progression(existing_signal, description, expected_behavior = "")`
+  returns a progression registration ID or `""`. It preserves the existing signal
+  and ordered arguments, subject to the same 0–8-argument/duplicate/unwatch rules
+  as `watch_signal`. Events have kind `progression`, not an inferred success/failure.
+
+Coordinate-space labels are `world`, `local` or `scene_local`. The caller must
+declare the correct frame and use comparable player/bounds coordinates; no camera
+or transform conversion is guessed. For this demo's custom drawn player, use
+`set_player(scene, 100, "player_position", "scene_local")` and the scene's PLAY_AREA
+with `scene_local` bounds. No gameplay changes or PostPlay-specific emitters are
+needed. Stationary samples provide context but **never prove a softlock**.
+Non-finite/unsupported sampled position values retain safe-value markers, not
+fabricated coordinates.
+
+Semantic context is developer-supplied, not ground truth or findings. Never pass
+bug-mode flags, evaluation answers or hidden scenario labels into these APIs.
+No automatic out-of-bounds/softlock classification is implemented. All registrations
+share the existing 128-entry history and global telemetry budgets; metadata is
+persisted before referenced events. Default action capture works with none of
+these optional annotations.
+
 ## Lifecycle and clocks
 
 Initial `session.json` is written before the event log is opened. It declares
@@ -190,3 +271,11 @@ unchanged/change sampling, null/unsupported values, weak targets, invalidated pa
 source identity after rename/reparent, 0/8-argument signals, registration/log caps,
 and failed manifest writes. Synthetic outputs use `postplay-watch-fixture-*` in
 the process temporary directory (which may be Nix's temporary shell directory).
+
+`nix develop -c just observation-test` runs the actual smoke scene's controls and
+movement in deterministic fixtures, validates its input/position/bounds/progression
+records, and checks the no-annotation path, text-focus suppression, custom action
+rates/disable, 3D positions, freed players, invalid context, metadata failure and
+global cap cleanup. Fixtures are not real human recordings, timing measurements
+or model evaluation. Outputs use `postplay-observation-fixture-*` under the
+process temporary directory.

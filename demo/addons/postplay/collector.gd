@@ -4,6 +4,7 @@ extends Node
 
 const SafeValue = preload("res://addons/postplay/safe_value.gd")
 const Watchers = preload("res://addons/postplay/watchers.gd")
+const ActionObserver = preload("res://addons/postplay/action_observer.gd")
 const MAX_EVENTS := 10000
 const MAX_LOG_BYTES := 16777216
 const MAX_EVENT_BYTES := 16384
@@ -20,10 +21,60 @@ var _checkpoint_elapsed := 0.0
 var _active := false
 var _used := false
 var _watchers: RefCounted
+var _actions: RefCounted
 
 
 func _init() -> void:
 	_watchers = Watchers.new(self)
+	_actions = ActionObserver.new(self)
+
+
+## Select up to 32 existing actions, or [] to disable. No raw keys/text recorded.
+func set_input_actions(actions: Array, interval_ms: int = 50) -> Error:
+	return _actions.configure(actions, interval_ms) if _active else ERR_UNCONFIGURED
+
+
+## Optional Vector2/Vector3 player position samples, including stationary samples.
+## Custom property paths must declare their coordinate space accurately.
+func set_player(target: Variant, interval_ms: int = 100, property_path: String = "global_position", coordinate_space: String = "world") -> String:
+	if not _active or typeof(target) != TYPE_OBJECT or not is_instance_valid(target) or coordinate_space not in ["world", "local", "scene_local"]:
+		return ""
+	if not target is Node or not target.is_inside_tree():
+		return ""
+	return _watchers.watch_property(target, property_path, "Declared player position", interval_ms, "", "player", coordinate_space)
+
+
+## Observe a real progression signal; does not infer success, failure or softlocks.
+func watch_progression(observed: Signal, description: String, expected_behavior: String = "") -> String:
+	return _watchers.watch_signal(observed, description, expected_behavior, "progression") if _active else ""
+
+
+## Declare positive-size Rect2/AABB bounds, without automatic bug classification.
+func set_playable_bounds(bounds: Variant, description: String = "Declared playable region", coordinate_space: String = "world") -> String:
+	if not _active or description.length() > 1024 or coordinate_space not in ["world", "local", "scene_local"]:
+		return ""
+	var position: Variant
+	var size: Variant
+	if bounds is Rect2:
+		position = bounds.position
+		size = bounds.size
+		if not position.is_finite() or not size.is_finite() or size.x <= 0 or size.y <= 0:
+			return ""
+	elif bounds is AABB:
+		position = bounds.position
+		size = bounds.size
+		if not position.is_finite() or not size.is_finite() or size.x <= 0 or size.y <= 0 or size.z <= 0:
+			return ""
+	else:
+		return ""
+	if SafeValue.encode_payload(position).get("type") == "unsupported" or SafeValue.encode_payload(size).get("type") == "unsupported":
+		return ""
+	var registration := _add_registration("bounds", {"id": "src-1", "label": "PostPlay runtime", "node_path": null}, description, "")
+	if registration.is_empty():
+		return ""
+	if _append_event("annotation", "playable_bounds", {"position": position, "size": size, "coordinate_space": coordinate_space}, registration) != OK:
+		return ""
+	return registration.id
 
 
 ## Observe an existing signal (0–8 arguments). Returns reg-N, or empty on failure.
@@ -78,7 +129,7 @@ func start_session(output_root: String, project: Dictionary, capture: Dictionary
 			"mode": capture.get("mode", "movie_maker"), "video_path": "recording." + format,
 			"format": format, "fps": capture.get("fps", 30),
 			"width": capture.get("width", 960), "height": capture.get("height", 540),
-			"duration_ms": null, "collision_debug": capture.get("collision_debug", false)
+			"duration_ms": null, "collision_debug": capture.get("collision_debug", get_tree().debug_collisions_hint)
 		},
 		"telemetry": {"path": "events.jsonl", "event_count": 0, "truncated": false},
 		"synchronization": {"status": "unknown", "estimated_error_ms": null, "anchor": null,
@@ -95,7 +146,7 @@ func start_session(output_root: String, project: Dictionary, capture: Dictionary
 		return last_error
 	_active = true
 	set_process(true)
-	return append_event("lifecycle", "capture_started", {"video_finalization": "pending"})
+	return append_event("lifecycle", "capture_started", {"video_finalization": "pending", "input_policy": _actions.start()})
 
 
 ## Append one bounded, JSON-safe observation. No raw input or object reflection.
@@ -126,7 +177,7 @@ func _append_event(kind: String, label: String, payload: Variant = null, registr
 	var bytes := line.to_utf8_buffer()
 	if sequence > MAX_EVENTS or bytes.size() > MAX_EVENT_BYTES or _events.get_position() + bytes.size() > MAX_LOG_BYTES:
 		_manifest.telemetry.truncated = true
-		_watchers.stop()
+		_stop_observers()
 		last_error = _write_manifest()
 		return ERR_OUT_OF_MEMORY if last_error == OK else last_error
 	_events.store_buffer(bytes)
@@ -135,7 +186,7 @@ func _append_event(kind: String, label: String, payload: Variant = null, registr
 	if last_error != OK:
 		# A partial final line is preserved, not silently repaired or counted.
 		_active = false
-		_watchers.stop()
+		_stop_observers()
 		_events.close()
 		_events = null
 		return last_error
@@ -168,7 +219,7 @@ func abort_session() -> Error:
 func _close_capture(aborted: bool) -> Error:
 	if not _active:
 		return ERR_UNCONFIGURED
-	_watchers.stop()
+	_stop_observers()
 	var append_error := append_event("lifecycle", "capture_aborted" if aborted else "runtime_stopped")
 	if not _active:
 		return append_error
@@ -190,6 +241,7 @@ func _process(delta: float) -> void:
 	if not _active:
 		return
 	_simulation_ms += delta * 1000.0
+	_actions.sample(delta)
 	_watchers.sample(delta)
 	_checkpoint_elapsed += delta
 	if _checkpoint_elapsed >= 1.0:
@@ -200,7 +252,12 @@ func _process(delta: float) -> void:
 func _exit_tree() -> void:
 	if _active:
 		seal_for_finalization()
+	_stop_observers()
+
+
+func _stop_observers() -> void:
 	_watchers.stop()
+	_actions.stop()
 
 
 func _add_registration(kind: String, source: Dictionary, description: String, expected_behavior: String) -> Dictionary:

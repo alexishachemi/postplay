@@ -58,6 +58,10 @@ capture-test:
 watch-test:
     node --test app/tests/watchers.test.ts
 
+# Verify selected action states, text-focus privacy, player/bounds/progression context.
+observation-test:
+    node --test app/tests/observations.test.ts
+
 # Check strict TypeScript and Astro types.
 typecheck:
     npm --prefix app run check
