@@ -41,6 +41,14 @@ func _run() -> void:
 	assert(ResourceSaver.save(load("res://main.tscn"), "res://main.tscn") == OK)
 	assert(ResourceLoader.get_resource_uid("res://main.tscn") != ResourceUID.INVALID_ID)
 	var directories: Array[String] = []
+	if OS.get_cmdline_user_args().size() > 1 and OS.get_cmdline_user_args()[1] == "timing":
+		assert(plugin.start_recording() == OK)
+		var directory: String = plugin._directory
+		assert(await _wait_until(func(): return plugin._directory.is_empty() and plugin._worker == null))
+		assert(Files.read_json(directory.path_join("session.json")).status == "complete")
+		print("POSTPLAY_TIMING_RESULT " + directory)
+		get_tree().quit(0)
+		return
 	for previous in [false, true]:
 		editor.set_movie_maker_enabled(previous)
 		if previous:

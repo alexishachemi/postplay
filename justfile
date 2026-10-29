@@ -66,6 +66,18 @@ observation-test:
 editor-capture-test:
     node app/scripts/editor-capture-check.ts
 
+# GUI: measure three visible beacon flashes in a disposable calibration recording.
+sync-capture-test:
+    node app/scripts/editor-capture-check.ts --timing
+
+# Deterministic anchor, drift, missing-anchor and conversion-offset checks.
+sync-test:
+    node --test app/tests/synchronization.test.ts app/tests/synchronization-command.test.ts
+
+# Read-only visible-event measurement; append --apply to save metadata + original backup.
+sync-measure session observations clock='process_frame' *args:
+    node app/scripts/measure-synchronization.ts "$@"
+
 # Headless reservation/claim/finalization fixtures and media/error checks.
 workflow-test:
     node --test app/tests/capture-workflow.test.ts

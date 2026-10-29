@@ -59,6 +59,8 @@ Godot/Node/FFmpeg prerequisites.
 | `just observation-test` | Demo input/movement, text-focus privacy and optional semantic context |
 | `just workflow-test` | Reserved-session lifecycle, media finalization and failure fixtures |
 | `just editor-capture-test` | Explicit GUI editor recording/restoration check in a disposable project |
+| `just sync-test` / `just sync-capture-test` | Deterministic mappings / real GUI visible-event calibration |
+| `just sync-measure SESSION OBSERVATIONS [CLOCK] [--apply]` | Preview a measured anchor; opt in to backed-up metadata update |
 | `just nix-check` | Evaluate the flake outputs |
 | `just probe VIDEO` | Inspect media metadata |
 | `just convert VIDEO OUTPUT.mp4` | Convert without overwriting an existing output |
@@ -77,8 +79,10 @@ now define `session.json`/`events.jsonl` and bounded safe values. The reusable
 [runtime collector](docs/capture-runtime.md) writes these packages and watches
 existing signals/properties, polls selected action states, and supports optional
 player/bounds/progression context. [Editor recording](docs/editor-capture.md)
-adds Record Session / Stop PostPlay controls and media finalization. Synchronization
-measurement remains M1.6. The M0 smoke telemetry
+adds Record Session / Stop PostPlay controls and media finalization.
+[Synchronization measurement](docs/synchronization.md) maps explicitly observed
+anchors, exposes uncertainty and preserves originals. Unmeasured sessions stay
+unknown. The M0 smoke telemetry
 keeps its separate format.
 
 ## Initial application skeletons

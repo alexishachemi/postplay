@@ -96,9 +96,10 @@ declare success for a still-running process). Recovery is not a power-loss guara
 
 The finalizer handles this addon's own local capture packages. Safe general import
 and full untrusted runtime-data validation remain M2.1; a complete status does not
-replace import validation. Synchronization is still **unknown** until M1.6 measures
-a visible event: encoded video begins before the runtime autoload's first event,
-so clocks must not be equated just because the movie is fixed-fps.
+replace import validation. Synchronization remains **unknown** until a visible
+event is measured in that specific recording. Follow the
+[measurement guide](synchronization.md) to preview/apply an anchor and error
+estimate. Clocks must not be equated just because the movie is fixed-fps.
 
 ## Verification and remaining human check
 
