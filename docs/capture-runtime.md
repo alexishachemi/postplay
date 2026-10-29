@@ -9,6 +9,12 @@ M1.5 installs the public PostPlay autoload and [editor capture workflow](editor-
 
 ## Minimal usage
 
+For normal editor recording, follow the [addon integration guide](addon-integration.md)
+and use the installed `PostPlay` autoload's watch methods. **Do not create/start
+another collector**: the editor-launched autoload already owns the session.
+The lower-level example below records standalone telemetry only; it neither
+starts Movie Maker nor produces a finalized video package on its own.
+
 Run this from a Node already in the scene tree:
 
 ```gdscript
@@ -231,8 +237,9 @@ Wall elapsed time uses monotonic ticks; simulation time accumulates `_process`
 delta while this Node processes (inherits normal pause behavior). Process and
 physics fields use their independent engine counters, not counters reset at
 capture start. An event can precede the first process tick and have simulation
-time zero. None of these fields is an encoded video time; visual alignment is
-still M1.6. Keep the collector alive/in-tree for the observation duration.
+time zero. None of these fields is an encoded video time; use the
+[visible-event measurement workflow](synchronization.md) rather than guessing
+alignment. Keep the collector alive/in-tree for the observation duration.
 
 ## Limits, errors and recovery
 

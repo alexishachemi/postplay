@@ -1,5 +1,8 @@
 # Record a portable session from Godot
 
+For a different game, first follow the [copy/enable installation guide](addon-integration.md).
+The instructions below start with the already-enabled repository demo.
+
 Use the pinned development shell so the editor inherits Godot, FFmpeg and FFprobe:
 
 ```sh

@@ -1,0 +1,16 @@
+; Independent integration fixture. No PostPlay autoload or enabled plugin at start.
+config_version=5
+
+[application]
+config/name="Independent capture fixture"
+run/main_scene="res://basic.tscn"
+
+[display]
+window/size/viewport_width=480
+window/size/viewport_height=270
+window/stretch/mode="viewport"
+window/stretch/aspect="keep"
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+environment/defaults/default_clear_color=Color(0.04, 0.06, 0.09, 1)

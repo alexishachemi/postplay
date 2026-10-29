@@ -66,6 +66,10 @@ observation-test:
 editor-capture-test:
     node app/scripts/editor-capture-check.ts
 
+# GUI: install only the addon in an independent project, then record without/with hooks.
+fresh-project-test:
+    node app/scripts/fresh-project-check.ts
+
 # GUI: measure three visible beacon flashes in a disposable calibration recording.
 sync-capture-test:
     node app/scripts/editor-capture-check.ts --timing

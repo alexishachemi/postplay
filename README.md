@@ -59,6 +59,7 @@ Godot/Node/FFmpeg prerequisites.
 | `just observation-test` | Demo input/movement, text-focus privacy and optional semantic context |
 | `just workflow-test` | Reserved-session lifecycle, media finalization and failure fixtures |
 | `just editor-capture-test` | Explicit GUI editor recording/restoration check in a disposable project |
+| `just fresh-project-test` | GUI: copy/enable the addon in an independent project; capture without/with watches |
 | `just sync-test` / `just sync-capture-test` | Deterministic mappings / real GUI visible-event calibration |
 | `just sync-measure SESSION OBSERVATIONS [CLOCK] [--apply]` | Preview a measured anchor; opt in to backed-up metadata update |
 | `just nix-check` | Evaluate the flake outputs |
@@ -73,6 +74,9 @@ directory. Quote paths containing spaces. `smoke-prepare` remains specific to
 the measured M0 capture, as described below. `smoke-analyze` requires the key in
 the environment and retains the CLI's replay guard. Default listing, tests and
 preparation do not upload anything.
+
+To use PostPlay in another game, follow the [copy/enable integration guide](docs/addon-integration.md).
+The addon alone requires Godot and FFmpeg, not the dashboard or an API key.
 
 M0 is approved by the owner. M1's [portable raw capture contracts](contracts/README.md)
 now define `session.json`/`events.jsonl` and bounded safe values. The reusable
