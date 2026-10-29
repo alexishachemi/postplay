@@ -29,7 +29,7 @@ demo *args:
 editor:
     godot --editor --path demo
 
-# Record gameplay and smoke telemetry into a fresh recordings/capture-* directory.
+# Legacy M0 smoke only; portable v1 capture uses the editor's Record Session button.
 record:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -61,6 +61,14 @@ watch-test:
 # Verify selected action states, text-focus privacy, player/bounds/progression context.
 observation-test:
     node --test app/tests/observations.test.ts
+
+# GUI: two short editor recordings in a disposable project; no API requests.
+editor-capture-test:
+    node app/scripts/editor-capture-check.ts
+
+# Headless reservation/claim/finalization fixtures and media/error checks.
+workflow-test:
+    node --test app/tests/capture-workflow.test.ts
 
 # Check strict TypeScript and Astro types.
 typecheck:

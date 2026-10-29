@@ -4,7 +4,7 @@ M1.2 provides `demo/addons/postplay/collector.gd`, a runtime-only Node. It does
 not scan the scene, collect keyboard text, start Movie Maker or call a model.
 M1.3 adds existing-signal and property watches through `watchers.gd`.
 M1.4 adds selected action states and optional player/bounds/progression context.
-Editor/autoload installation and media finalization remain M1.5;
+M1.5 installs the public PostPlay autoload and [editor capture workflow](editor-capture.md).
 `just record` still uses the separate M0 smoke probe, not this writer.
 
 ## Minimal usage
@@ -71,7 +71,7 @@ capture.unwatch(health_watch)
 ```
 
 No emitter changes or PostPlay-specific gameplay signals are needed. These are
-methods on the collector instance, not an installed global autoload yet.
+methods on the collector instance, also exposed by the installed `PostPlay` autoload.
 
 - `watch_signal(existing_signal, description, expected_behavior = "")` returns
   a `reg-N` ID, or `""` on failure. Supports declared signatures of 0–8 arguments,
@@ -217,7 +217,7 @@ created or its existence claimed by the collector.
 - `checkpoint()` flushes events and replaces the manifest with the current count.
   Automatic checkpoints run after each accumulated second of process delta.
 - `seal_for_finalization()` appends `runtime_stopped`, checkpoints and closes the
-  log. Status stays `recording`, awaiting an editor finalizer that checks the
+  log. Status stays `recording`, awaiting the editor finalizer that checks the
   finished media and measured duration before declaring `complete`.
 - `abort_session()` appends `capture_aborted`, writes terminal `incomplete` and
   UTC end, and closes the log. It preserves all original media/telemetry. If UTC

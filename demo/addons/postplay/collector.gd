@@ -5,10 +5,10 @@ extends Node
 const SafeValue = preload("res://addons/postplay/safe_value.gd")
 const Watchers = preload("res://addons/postplay/watchers.gd")
 const ActionObserver = preload("res://addons/postplay/action_observer.gd")
+const SessionFiles = preload("res://addons/postplay/session_files.gd")
 const MAX_EVENTS := 10000
 const MAX_LOG_BYTES := 16777216
 const MAX_EVENT_BYTES := 16384
-const MAX_MANIFEST_BYTES := 262144
 const EVENT_KINDS := ["lifecycle", "signal", "property", "input", "position", "annotation", "progression"]
 
 var session_directory := ""
@@ -120,22 +120,9 @@ func start_session(output_root: String, project: Dictionary, capture: Dictionary
 	_used = true
 	session_directory = target
 	_started_ticks = Time.get_ticks_msec()
-	var format: String = capture.get("format", "avi")
-	_manifest = {
-		"schema_version": "1", "session_id": session_id,
-		"project": project.duplicate(true), "godot_version": Engine.get_version_info()["string"],
-		"status": "recording", "started_at_utc": _utc_now(), "ended_at_utc": null,
-		"capture": {
-			"mode": capture.get("mode", "movie_maker"), "video_path": "recording." + format,
-			"format": format, "fps": capture.get("fps", 30),
-			"width": capture.get("width", 960), "height": capture.get("height", 540),
-			"duration_ms": null, "collision_debug": capture.get("collision_debug", get_tree().debug_collisions_hint)
-		},
-		"telemetry": {"path": "events.jsonl", "event_count": 0, "truncated": false},
-		"synchronization": {"status": "unknown", "estimated_error_ms": null, "anchor": null,
-			"notes": ["Unfinalized capture; video existence, duration and alignment not verified."]},
-		"registrations": []
-	}
+	var settings := capture.duplicate()
+	settings.collision_debug = capture.get("collision_debug", get_tree().debug_collisions_hint)
+	_manifest = SessionFiles.manifest(project, settings, session_id)
 	# A recoverable recording manifest exists before the log is opened.
 	last_error = _write_manifest()
 	if last_error != OK:
@@ -144,6 +131,49 @@ func start_session(output_root: String, project: Dictionary, capture: Dictionary
 	if _events == null:
 		last_error = FileAccess.get_open_error()
 		return last_error
+	_active = true
+	set_process(true)
+	return append_event("lifecycle", "capture_started", {"video_finalization": "pending", "input_policy": _actions.start()})
+
+
+## Claim an editor-prepared empty package once. Never resumes an older log.
+func start_reserved_session(directory: String) -> Error:
+	if _used or not is_inside_tree():
+		return ERR_ALREADY_IN_USE if _used else ERR_UNCONFIGURED
+	var prepared := SessionFiles.read_json(directory.path_join("session.json"))
+	var launch := SessionFiles.read_json(directory.path_join("launch.json"))
+	if prepared.get("schema_version") != "1" or prepared.get("status") != "recording" or launch.get("version") != 1 or launch.get("session_id") != prepared.get("session_id"):
+		return ERR_INVALID_DATA
+	if not directory.is_absolute_path() or directory.get_file() != prepared.session_id or not _matches("^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", prepared.session_id):
+		return ERR_INVALID_PARAMETER
+	if not prepared.get("project") is Dictionary or not _valid_project(prepared.project) or not prepared.get("capture") is Dictionary:
+		return ERR_INVALID_DATA
+	if not prepared.get("telemetry") is Dictionary or prepared.telemetry.get("event_count") != 0 or prepared.telemetry.get("truncated") != false or not prepared.get("registrations") is Array or not prepared.registrations.is_empty():
+		return ERR_INVALID_DATA
+	if prepared.capture.get("video_path") != "recording.avi" or prepared.capture.get("mode") != "movie_maker" or prepared.capture.get("format") != "avi":
+		return ERR_INVALID_DATA
+	var capture := {"mode": "movie_maker", "format": "avi", "fps": prepared.capture.get("fps", 0),
+		"width": int(prepared.capture.get("width", 0)), "height": int(prepared.capture.get("height", 0)),
+		"collision_debug": get_tree().debug_collisions_hint}
+	if not _valid_capture(capture) or capture.width != prepared.capture.get("width") or capture.height != prepared.capture.get("height"):
+		return ERR_INVALID_DATA
+	var existing := FileAccess.open(directory.path_join("events.jsonl"), FileAccess.READ)
+	if existing == null or existing.get_length() != 0:
+		return ERR_ALREADY_IN_USE
+	existing.close()
+	last_error = DirAccess.make_dir_absolute(directory.path_join("runtime.claim"))
+	if last_error != OK:
+		return last_error
+	_used = true
+	session_directory = directory
+	_started_ticks = Time.get_ticks_msec()
+	_manifest = SessionFiles.manifest(prepared.project, capture, prepared.session_id)
+	last_error = _write_manifest()
+	if last_error != OK:
+		return last_error
+	_events = FileAccess.open(directory.path_join("events.jsonl"), FileAccess.READ_WRITE)
+	if _events == null:
+		return FileAccess.get_open_error()
 	_active = true
 	set_process(true)
 	return append_event("lifecycle", "capture_started", {"video_finalization": "pending", "input_policy": _actions.start()})
@@ -275,21 +305,7 @@ func _add_registration(kind: String, source: Dictionary, description: String, ex
 
 
 func _write_manifest() -> Error:
-	var bytes := (JSON.stringify(_manifest, "\t", true, true) + "\n").to_utf8_buffer()
-	if bytes.size() > MAX_MANIFEST_BYTES:
-		return ERR_OUT_OF_MEMORY
-	var temporary := session_directory.path_join("session.json.pending")
-	var file := FileAccess.open(temporary, FileAccess.WRITE)
-	if file == null:
-		return FileAccess.get_open_error()
-	file.store_buffer(bytes)
-	file.flush()
-	var error := file.get_error()
-	file.close()
-	if error != OK:
-		return error
-	# Same-directory replacement preserves the prior manifest on an interrupted write.
-	return DirAccess.rename_absolute(temporary, session_directory.path_join("session.json"))
+	return SessionFiles.write_json(session_directory.path_join("session.json"), _manifest)
 
 
 static func _utc_now() -> String:

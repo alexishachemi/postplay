@@ -50,13 +50,15 @@ Godot/Node/FFmpeg prerequisites.
 | `just demo` / `just editor` | Launch the demo / Godot editor |
 | `just app` / `just app-stop` | Start / stop the background Astro dev server |
 | `just build` / `just app-start` | Build / run the foreground production server |
-| `just record` | Human recording in a fresh `recordings/capture-*` directory; Escape finishes |
+| `just record` | Legacy M0 smoke recording; use editor Record Session for portable v1 capture |
 | `just check` | Node tests, Godot smoke test, TypeScript checks and build; no API calls |
 | `just test` / `just smoke-test` | Run Node tests / deterministic Godot smoke test |
 | `just contract-test` | Raw session/event contracts, fixtures and Godot-to-Node serialization checks |
 | `just capture-test` | Godot runtime lifecycle, limits and forced-exit recovery; synthetic data only |
 | `just watch-test` | Existing signals/properties, safe sampling and cleanup in Godot |
 | `just observation-test` | Demo input/movement, text-focus privacy and optional semantic context |
+| `just workflow-test` | Reserved-session lifecycle, media finalization and failure fixtures |
+| `just editor-capture-test` | Explicit GUI editor recording/restoration check in a disposable project |
 | `just nix-check` | Evaluate the flake outputs |
 | `just probe VIDEO` | Inspect media metadata |
 | `just convert VIDEO OUTPUT.mp4` | Convert without overwriting an existing output |
@@ -74,8 +76,9 @@ M0 is approved by the owner. M1's [portable raw capture contracts](contracts/REA
 now define `session.json`/`events.jsonl` and bounded safe values. The reusable
 [runtime collector](docs/capture-runtime.md) writes these packages and watches
 existing signals/properties, polls selected action states, and supports optional
-player/bounds/progression context. Editor wiring and media finalization are still
-to follow. The M0 smoke telemetry
+player/bounds/progression context. [Editor recording](docs/editor-capture.md)
+adds Record Session / Stop PostPlay controls and media finalization. Synchronization
+measurement remains M1.6. The M0 smoke telemetry
 keeps its separate format.
 
 ## Initial application skeletons
@@ -99,7 +102,8 @@ its development server in the background; stop it from `app/` with
 The demo has arrow-key movement and a beacon activated with Space/Enter. Each
 activation increments the visible counter, changes the beacon color, and flashes
 a stripe for half a simulation second. Escape finishes the run. The enabled
-addon remains a skeleton; the smoke telemetry probe is separate from its API.
+addon provides editor recording and the public PostPlay runtime API; the old smoke
+telemetry probe remains separate.
 For a noninteractive parse/load check:
 
 ```sh
