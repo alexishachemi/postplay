@@ -58,6 +58,7 @@ Godot/Node/FFmpeg prerequisites.
 | `just sessions` / `just session-inspect UUID` | List/inspect POSTPLAY_SESSION_ROOT (or XDG default); no upload |
 | `just session-prepare UUID [START_MS DURATION_MS]` | Prepare bounded MP4 + correlated context locally; requires measured synchronization |
 | `just preparation-test` | Context/evidence/timing/media conversion and failure fixtures |
+| `just ai-contract-test` | Versioned AI prompts/results, evidence references, bounds and mocked API failures; no upload |
 | `just capture-test` | Godot runtime lifecycle, limits and forced-exit recovery; synthetic data only |
 | `just watch-test` | Existing signals/properties, safe sampling and cleanup in Godot |
 | `just observation-test` | Demo input/movement, text-focus privacy and optional semantic context |

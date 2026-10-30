@@ -57,6 +57,44 @@ The `{{ANALYSIS_CONTEXT_JSON}}` placeholder is replaced with safely serialized J
 
 For a questionable but schema-valid finding, the MVP may choose a simple policy of **quarantine with explicit diagnostics** rather than implementing elaborate automatic confidence adjustments. Make this behavior clear in the dashboard and tests.
 
+### Implemented local v1 validation policy
+
+`app/src/server/analysis-validation.ts` validates both contracts with strict AJV
+and throws on invalid input; it never replaces a failure with an empty finding
+list. `validateProposal` also revalidates its context, including for empty reports.
+The approved wire schemas and prompts remain unchanged from the M0 API check.
+Additional local policy rejects:
+
+- Non-JSON/cyclic/non-finite values, nesting beyond 16 levels, more than 20,000
+  visited nodes (including object keys), or serialized JSON above 256 KiB per
+  context/proposal. These checks run before schema validation. Request preparation
+  has its own tighter 96,000-byte context budget; HTTP response-body limits must
+  also be enforced by the API adapter before parsing.
+- Unsafe integer times/counts, empty/reversed video windows, unsorted or out-of-window
+  events, duplicate IDs and missing registration references. Unknown synchronization
+  requires a null error; measured synchronization requires a nonnegative estimate.
+- Incorrect coverage counts, omitted events without a truncation flag, or a
+  truncation flag without a nonblank omission explanation. Clip-only coverage may
+  have omissions even when every telemetry event is included.
+- Blank required finding prose, IDs, evidence observations or supplied list entries;
+  missing evidence, unresolved context event IDs, incorrect nullable evidence fields,
+  invalid finding/video time ranges and developer expectations without nonblank
+  supplied source text. Empty alternatives/reproduction/limitations lists remain
+  valid; the validator does not fabricate missing information.
+- High certainty without sourced expectations, known synchronization and both
+  telemetry and video evidence. Severity is checked independently of certainty.
+
+Passing these checks proves **contract consistency, not the truth of the model's
+prose or the existence of a bug**. An in-window video timestamp does not prove an
+observation occurred, and a matching event ID does not prove its description.
+Raw-package provenance checks, interpretation/uncertainty handling and offline
+report persistence remain M2.5 work. No HTML sanitization, semantic truth verifier,
+automatic confidence downgrade or confirmed-softlock detector is claimed here.
+
+Run `nix develop -c just ai-contract-test` for synthetic positive/negative contract
+cases and mocked network/error/cleanup tests. This command makes no paid request
+and does not measure real model performance.
+
 ## 6. SAM 3.1 optional follow-up
 
 SAM is a **separate conditional processing stage**, not a general language-model system prompt. Use `sam-3.1` only after a specific, concrete visual question has been identified, e.g. tracking the player through a short interval near an apparent boundary. SAM provides boxes/masks/tracks, not defect explanations.

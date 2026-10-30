@@ -62,6 +62,10 @@ session-prepare id *args:
 preparation-test:
     node --test app/tests/preparation.test.ts
 
+# Versioned AI contracts, semantic rejection and mocked API failure checks; no upload.
+ai-contract-test:
+    node --test app/tests/analysis-validation.test.ts app/tests/meta-smoke.test.ts
+
 # Run the deterministic Godot smoke scene test; no recording or remote requests.
 smoke-test:
     godot --headless --path demo --script res://tests/smoke_scene_test.gd
