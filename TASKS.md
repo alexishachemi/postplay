@@ -38,15 +38,15 @@ Do not insert example results like these until they have actually occurred. The 
 
 **This is the first place Codex checks when asked to resume.** Maintain **one active task at a time**. Write the task ID and next action **before making substantive code changes**; update this short record at meaningful boundaries. The checklist below remains the source of **verified completion**, not this checkpoint.
 
-- **Task:** None — M1.7 verified; M1 owner exit review is pending.
-- **Status:** M1 implementation complete; awaiting owner milestone verification.
-- **Last checkpoint:** 2026-10-29 — `just fresh-project-test` fully passed in `artifacts/fresh project-W4obPD/`: copied addon enabled from scratch, complete no-hook and existing-signal/property movies, ordinary inactive run, settings restoration and disable/autoload removal. `just check` passed 51 tests, gameplay smoke, zero type diagnostics and build; formatting/whitespace passed. M1.6 predecessor `17f8cae`.
-- **Objective:** Document copy/enable prerequisites and public signal/property examples; verify a genuinely fresh Godot project records first without hooks and then with an existing watched signal.
-- **Progress actually saved:** Independent fresh-project fixture/GUI command and copy/enable/public API guide. No addon implementation change was necessary. Normal game scripts remain independent of addon internals; no ZIP/package/dependency changes.
-- **Verification performed:** Fresh-project GUI and full regression passed; no-hook package has two lifecycle events and zero registrations. Annotated package has one existing signal emission (argument 9) and initial/change property values 10/9, five events total. Both actual AVIs are 480×270 at 30 fps and complete; synchronization stays unknown for these captures. Earlier test-driver type/phase assertion errors corrected, not counted as passing. No paid call.
-- **Files changed / artifacts to inspect:** `tests/fixtures/godot-project/`, `app/scripts/fresh-project-check.ts`, `docs/addon-integration.md`, README/runtime/editor docs, justfile. Verified ignored artifact directory: `artifacts/fresh project-W4obPD/`; earlier attempts preserved.
-- **Next exact action:** Owner reviews M1 exit gate using `docs/editor-capture.md` and `docs/synchronization.md`. Next implementation task is M2.1 safe session ingestion; establish a new checkpoint first and explicitly retain M1 approval as pending if preparing independent work. No paid call needed.
-- **Blockers / owner action:** M0 approved; M1 owner gate remains unchecked. No implementation blocker. Supplied libdecor/Wayland warnings persist; Nix derivation unchanged.
+- **Task:** M2.1 — safe session discovery, loading and media inspection.
+- **Status:** In progress; M1 explicitly owner-approved on 2026-10-30.
+- **Last checkpoint:** 2026-10-30 — Clean worktree at `a81cd3d`; owner approval reconciled with completed M1 evidence. M2.1 acceptance, raw validators, prior media code and configured sandbox/Nix reviewed before implementation.
+- **Objective:** Read portable packages only from configured writable local storage; validate schemas/events/media, confine paths, and return actionable errors for damaged/partial sessions. No uploads or conversion in this task.
+- **Progress actually saved:** M1 approval and M2.1 write-ahead checkpoint only; implementation not started.
+- **Verification performed:** Read-only repository inspection; pinned FFprobe help confirms seekable inherited-file-descriptor protocol is available. No new capture or API call.
+- **Files changed / artifacts to inspect:** TASKS.md only so far; existing real packages retained in ignored M1 artifact directories.
+- **Next exact action:** Implement a server-only read-in-place library keyed by UUID under one configured root (XDG-compatible default), bounded no-symlink file reads, safe FFprobe invocation and diagnostic results. Add valid/damaged/traversal/partial/probe tests plus a local inspect/list command; verify against existing real capture artifacts. No paid call.
+- **Blockers / owner action:** None. Owner approved M1 exit on 2026-10-30; supplied libdecor/Wayland warnings persist, owner Nix derivation unchanged.
 
 When in progress, replace the placeholders with concise facts. **Do not put speculative claims here.** Distinguish completed implementation, tests actually run, and pending tests. A checkpoint may lag behind abrupt changes: on resume inspect staged/unstaged/untracked files, relevant commits, and test artifacts, then reconcile and update this section before continuing. Check for an existing output before repeating paid Meta API operations.
 
@@ -57,15 +57,15 @@ Once the task is verified, preserve its implementation/verification notes under 
 | Milestone | Priority | Status | Exit evidence |
 | --- | --- | --- | --- |
 | **M0 — Prove dependencies** | Critical | Verified | M0.1–M0.6 verified; owner explicitly approved exit gate on 2026-10-28 |
-| **M1 — Capture a portable session** | Critical | Awaiting verification | M1.1–M1.7 verified, including fresh-project installation/capture and measured 36 ms sync estimate; owner exit approval pending |
-| **M2 — Analyze end-to-end** | Critical | Not started | Actual model-backed validated report or explicit analysis failure, saved locally |
+| **M1 — Capture a portable session** | Critical | Verified | M1.1–M1.7 verified; owner explicitly approved exit on 2026-10-30 |
+| **M2 — Analyze end-to-end** | Critical | In progress | M2.1 safe ingestion underway; actual model-backed report remains pending |
 | **M3 — Review locally** | Critical | Not started | User can select a finding and inspect synchronized video + telemetry |
 | **M4 — Controlled demo and evaluation** | Essential | Not started | Three buggy/clean pairs captured, analyzed, and honestly evaluated |
 | **M5 — Polish and submission** | Essential; packaging optional | Not started | Reproducible setup, credible demo, submission assets; packaging status documented |
 
 **Delivery strategy:** Build the smallest record → analyze → review vertical slice before elaborating the demo or dashboard. Start a **minimal test scene in M0** so video and the real model can be exercised immediately; expand it into the three-scenario game in M4. Do not wait until M4 to collect the first real clip. Reserve the final development margin for fixes and submission rather than optional features.
 
-**Next task (only if no active work):** M1 owner exit review; next implementation is `M2.1` safe session ingestion. M0 is approved; do not infer M1 approval.
+**Next task (only if no active work):** `M2.1` safe session ingestion. M0 and M1 are owner-approved.
 
 ## 3. M0 — Prove dependencies and integration feasibility
 
@@ -193,7 +193,8 @@ Once the task is verified, preserve its implementation/verification notes under 
 
 **M1 exit gate — owner verification**
 
-- [ ] Record one complete real session (video + telemetry), repeat without overwriting, confirm settings restoration, and verify visible-event synchronization with its measured error.
+- [x] Record one complete real session (video + telemetry), repeat without overwriting, confirm settings restoration, and verify visible-event synchronization with its measured error.
+  - **Owner approval (2026-10-30):** Owner explicitly confirmed satisfaction and instructed marking M1 approved and proceeding to the next task. Prior automated/manual evidence remains recorded above; this approval is not a claim of additional tests.
 
 ## 5. M2 — AI analysis pipeline and evidence-grounded reports
 
@@ -355,8 +356,8 @@ Maintain this section whenever an implementation decision changes the path forwa
 ### Latest handoff
 
 - **Last completed task:** M1.7 fresh-project addon integration. Copied only addon into independent project, enabled from scratch, recorded no-hook then existing signal/property watches; actual AVI/contracts/settings/ordinary run/disable checks passed. 51-test/type/build/smoke regression passed. Artifacts: `artifacts/fresh project-W4obPD/`; installation guide: `docs/addon-integration.md`. Prior M1.6 commit `17f8cae`; measured sync evidence remains `artifacts/editor capture-mAGzwr/`.
-- **Next recommended task:** M1 owner exit review, then M2.1 safe ingestion. If preparing independent M2.1 work while awaiting review, record that explicitly and never mark M1 approved. Establish an active checkpoint before editing. No repeat paid smoke needed.
-- **Pending owner verification:** M0 approved by owner on 2026-10-28. All M1 implementation tasks verified; M1 exit gate remains unchecked pending owner confirmation of integrated capture/settings/synchronization. Follow `docs/editor-capture.md` and `docs/synchronization.md`.
+- **Next recommended task:** M2.1 safe ingestion is now active; M1 explicitly approved on 2026-10-30. No repeat paid smoke needed.
+- **Pending owner verification:** M0 and M1 are explicitly approved. Future M2 exit gate remains pending real pipeline implementation/verification.
 - **Known failures / deferred work:** Old crop disclosed to model; headless M0 API probe shutdown leak diagnostics remain. M1.5 harness/PID/UID failures corrected; supplied libdecor/Wayland warnings remain. Initial M0.5 Node type/return-type errors corrected before live call. No extra live error tests or six-session evaluation performed. Optional SAM and distribution packaging remain unstarted.
 
 ---
