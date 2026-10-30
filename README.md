@@ -57,6 +57,10 @@ Godot/Node/FFmpeg prerequisites.
 | `just ingestion-test` | Safe library loading, media probes, malformed/partial/path fixtures |
 | `just sessions` / `just session-inspect UUID` | List/inspect POSTPLAY_SESSION_ROOT (or XDG default); no upload |
 | `just session-prepare UUID [START_MS DURATION_MS]` | Prepare bounded MP4 + correlated context locally; requires measured synchronization |
+| `just session-analyze UUID PREPARATION_UUID` | Read-only validated preview; no upload |
+| `just session-analyze UUID PREPARATION_UUID --upload-to-meta` | **PAID:** explicitly upload selected video/telemetry; one attempt per preparation |
+| `just upload-cleanup FILE_ID` | Delete only a confirmed remote upload; no inference |
+| `just analysis-test` | Consent/provenance/reservation and mocked API failure/cleanup tests; no upload |
 | `just preparation-test` | Context/evidence/timing/media conversion and failure fixtures |
 | `just ai-contract-test` | Versioned AI prompts/results, evidence references, bounds and mocked API failures; no upload |
 | `just capture-test` | Godot runtime lifecycle, limits and forced-exit recovery; synthetic data only |
@@ -98,8 +102,10 @@ M1 is owner-approved. [Local session ingestion](docs/session-ingestion.md) now
 loads and probes saved packages from a configured library, with explicit errors
 for damaged/partial captures. [Media/context preparation](docs/session-preparation.md)
 now creates bounded MP4s and evidence-linkable context while preserving originals.
-General analysis and dashboard review remain subsequent M2/M3 work; successful
-inspection/preparation is not a clean model report and does not upload anything.
+[Explicit Muse submission](docs/session-analysis.md) now accepts prepared sessions
+through the CLI, saving contract-valid proposals and truthful failure/cleanup
+states. Evidence-reviewed reports and dashboard review remain M2.5/M3 work;
+inspection/preparation/preview do not upload or imply a clean report.
 
 ## Initial application skeletons
 
@@ -114,7 +120,7 @@ godot --editor --path demo
 ```
 
 Open <http://127.0.0.1:4321>. The page describes the current implementation
-status; session ingestion and analysis are not implemented yet. Astro 7 starts
+status; the session/analysis workflow is currently CLI-only. Astro 7 starts
 its development server in the background; stop it from `app/` with
 `npx astro dev stop`. The production server starts after a build with
 `npm --prefix app start`, also bound to loopback by default.

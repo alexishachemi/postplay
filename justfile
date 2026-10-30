@@ -58,6 +58,18 @@ session-inspect id:
 session-prepare id *args:
     node app/scripts/prepare-session.ts "$@"
 
+# Preview locally; append --upload-to-meta to explicitly make one PAID analysis attempt.
+session-analyze id preparation *args:
+    node --use-env-proxy app/scripts/analyze-session.ts "$@"
+
+# Delete only a known remote upload (see cleanup.json); never invokes inference.
+upload-cleanup file_id:
+    node --use-env-proxy app/scripts/cleanup-upload.ts "$1" --delete-from-meta
+
+# Prepared-session consent, provenance, one-attempt guard and mocked network failures.
+analysis-test:
+    node --test app/tests/session-analysis.test.ts app/tests/muse-api.test.ts
+
 # Deterministic context/clip/provenance/conversion-failure checks; no API requests.
 preparation-test:
     node --test app/tests/preparation.test.ts

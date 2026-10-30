@@ -69,7 +69,8 @@ Additional local policy rejects:
   visited nodes (including object keys), or serialized JSON above 256 KiB per
   context/proposal. These checks run before schema validation. Request preparation
   has its own tighter 96,000-byte context budget; HTTP response-body limits must
-  also be enforced by the API adapter before parsing.
+  also be enforced by the API adapter before parsing (the shared M2.4 adapter
+  now caps decoded HTTP bodies at 512 KiB).
 - Unsafe integer times/counts, empty/reversed video windows, unsorted or out-of-window
   events, duplicate IDs and missing registration references. Unknown synchronization
   requires a null error; measured synchronization requires a nonnegative estimate.
@@ -94,6 +95,11 @@ automatic confidence downgrade or confirmed-softlock detector is claimed here.
 Run `nix develop -c just ai-contract-test` for synthetic positive/negative contract
 cases and mocked network/error/cleanup tests. This command makes no paid request
 and does not measure real model performance.
+
+The [M2.4 submission guide](../docs/session-analysis.md) documents the implemented
+server-only prepared-session adapter, preview/consent, one-attempt reservation,
+resource limits, proposal/usage stages and cleanup-only retry. It does not yet
+claim the M2.5 evidence-reviewed report or M3 dashboard is implemented.
 
 ## 6. SAM 3.1 optional follow-up
 

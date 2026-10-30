@@ -18,6 +18,8 @@ Replace the UUID with a listed ID. The default is the entire recording, **only i
 it fits the caps**; a longer recording requires an explicit bounded interval.
 Preparation does not silently choose a shorter interval or downsample telemetry.
 The older `just smoke-prepare` is still M0-specific, not this portable v1 workflow.
+Next, [preview and explicitly submit to Muse](session-analysis.md). Preparing alone
+never uploads; the analysis command requires a separate consent flag.
 
 ## Prerequisites and limits
 
