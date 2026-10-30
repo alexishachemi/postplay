@@ -54,6 +54,8 @@ Godot/Node/FFmpeg prerequisites.
 | `just check` | Node tests, Godot smoke test, TypeScript checks and build; no API calls |
 | `just test` / `just smoke-test` | Run Node tests / deterministic Godot smoke test |
 | `just contract-test` | Raw session/event contracts, fixtures and Godot-to-Node serialization checks |
+| `just ingestion-test` | Safe library loading, media probes, malformed/partial/path fixtures |
+| `just sessions` / `just session-inspect UUID` | List/inspect POSTPLAY_SESSION_ROOT (or XDG default); no upload |
 | `just capture-test` | Godot runtime lifecycle, limits and forced-exit recovery; synthetic data only |
 | `just watch-test` | Existing signals/properties, safe sampling and cleanup in Godot |
 | `just observation-test` | Demo input/movement, text-focus privacy and optional semantic context |
@@ -88,6 +90,11 @@ adds Record Session / Stop PostPlay controls and media finalization.
 anchors, exposes uncertainty and preserves originals. Unmeasured sessions stay
 unknown. The M0 smoke telemetry
 keeps its separate format.
+
+M1 is owner-approved. [Local session ingestion](docs/session-ingestion.md) now
+loads and probes saved packages from a configured library, with explicit errors
+for damaged/partial captures. Conversion, general analysis and dashboard review
+remain subsequent M2/M3 work; successful inspection is not a clean model report.
 
 ## Initial application skeletons
 

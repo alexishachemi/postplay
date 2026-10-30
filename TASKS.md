@@ -38,14 +38,14 @@ Do not insert example results like these until they have actually occurred. The 
 
 **This is the first place Codex checks when asked to resume.** Maintain **one active task at a time**. Write the task ID and next action **before making substantive code changes**; update this short record at meaningful boundaries. The checklist below remains the source of **verified completion**, not this checkpoint.
 
-- **Task:** M2.1 — safe session discovery, loading and media inspection.
-- **Status:** In progress; M1 explicitly owner-approved on 2026-10-30.
-- **Last checkpoint:** 2026-10-30 — Clean worktree at `a81cd3d`; owner approval reconciled with completed M1 evidence. M2.1 acceptance, raw validators, prior media code and configured sandbox/Nix reviewed before implementation.
+- **Task:** None — M2.1 verified; next is M2.2 media/telemetry preparation.
+- **Status:** Ready for M2.2; M1 owner approval recorded in `2033686`.
+- **Last checkpoint:** 2026-10-30 — Final `just check` passed 63 tests, gameplay smoke, zero type diagnostics and build; formatting/whitespace passed. Real calibration CLI list/inspect succeeded (960×540/30 fps/6,000 ms, verified sync retained); saved interrupted package returned explicit partial_capture/nonzero. No new capture or API call.
 - **Objective:** Read portable packages only from configured writable local storage; validate schemas/events/media, confine paths, and return actionable errors for damaged/partial sessions. No uploads or conversion in this task.
-- **Progress actually saved:** M1 approval and M2.1 write-ahead checkpoint only; implementation not started.
-- **Verification performed:** Read-only repository inspection; pinned FFprobe help confirms seekable inherited-file-descriptor protocol is available. No new capture or API call.
-- **Files changed / artifacts to inspect:** TASKS.md only so far; existing real packages retained in ignored M1 artifact directories.
-- **Next exact action:** Implement a server-only read-in-place library keyed by UUID under one configured root (XDG-compatible default), bounded no-symlink file reads, safe FFprobe invocation and diagnostic results. Add valid/damaged/traversal/partial/probe tests plus a local inspect/list command; verify against existing real capture artifacts. No paid call.
+- **Progress actually saved:** Server-only read-in-place UUID library with XDG/configured writable root; pinned-directory-FD traversal, no symlinks/hardlinks/special files, bounded UTF-8 reads, package validation and explicit partial/corrupt results. Seekable FD-only FFprobe with forced demuxer, restricted protocols, timeout/output budgets and no credential environment. CLI list/inspect and just recipes; no source mutation or conversion.
+- **Verification performed:** Twelve new ingestion tests passed within the final 63-test regression, including actual AVI/OGV/MP4 probes, no-follow/special-file cases, partial/malformed packages and CLI failure handling. Real M1 fresh-project package also loaded with unknown sync retained. ENOENT probe timeout cleanup corrected; final CLI test completes in ~0.6 s rather than waiting 15 s. No paid call.
+- **Files changed / artifacts to inspect:** `app/src/server/session-library.ts`, `app/scripts/sessions.ts`, `app/tests/session-library.test.ts`, justfile and TASKS.md; deterministic generated media fixtures under process temporary directories. Existing originals unchanged.
+- **Next exact action:** Establish M2.2 checkpoint; add deterministic MP4 preparation and bounded, evidence-linkable telemetry normalization using explicit clock/trim mappings. Preserve original files and qualify unknown synchronization. Reuse current real artifacts; no paid call needed for preparation.
 - **Blockers / owner action:** None. Owner approved M1 exit on 2026-10-30; supplied libdecor/Wayland warnings persist, owner Nix derivation unchanged.
 
 When in progress, replace the placeholders with concise facts. **Do not put speculative claims here.** Distinguish completed implementation, tests actually run, and pending tests. A checkpoint may lag behind abrupt changes: on resume inspect staged/unstaged/untracked files, relevant commits, and test artifacts, then reconcile and update this section before continuing. Check for an existing output before repeating paid Meta API operations.
@@ -58,14 +58,14 @@ Once the task is verified, preserve its implementation/verification notes under 
 | --- | --- | --- | --- |
 | **M0 — Prove dependencies** | Critical | Verified | M0.1–M0.6 verified; owner explicitly approved exit gate on 2026-10-28 |
 | **M1 — Capture a portable session** | Critical | Verified | M1.1–M1.7 verified; owner explicitly approved exit on 2026-10-30 |
-| **M2 — Analyze end-to-end** | Critical | In progress | M2.1 safe ingestion underway; actual model-backed report remains pending |
+| **M2 — Analyze end-to-end** | Critical | In progress | M2.1 safe ingestion verified; preparation and actual model-backed persisted report remain pending |
 | **M3 — Review locally** | Critical | Not started | User can select a finding and inspect synchronized video + telemetry |
 | **M4 — Controlled demo and evaluation** | Essential | Not started | Three buggy/clean pairs captured, analyzed, and honestly evaluated |
 | **M5 — Polish and submission** | Essential; packaging optional | Not started | Reproducible setup, credible demo, submission assets; packaging status documented |
 
 **Delivery strategy:** Build the smallest record → analyze → review vertical slice before elaborating the demo or dashboard. Start a **minimal test scene in M0** so video and the real model can be exercised immediately; expand it into the three-scenario game in M4. Do not wait until M4 to collect the first real clip. Reserve the final development margin for fixes and submission rather than optional features.
 
-**Next task (only if no active work):** `M2.1` safe session ingestion. M0 and M1 are owner-approved.
+**Next task (only if no active work):** `M2.2` media/telemetry preparation. M0 and M1 are owner-approved.
 
 ## 3. M0 — Prove dependencies and integration feasibility
 
@@ -200,10 +200,14 @@ Once the task is verified, preserve its implementation/verification notes under 
 
 **Goal:** Given a saved session, the local backend produces a trustworthy, persistent structured result or an explicit failure.
 
-- [ ] **M2.1 — Import, validate, and inspect sessions safely**
+- [x] **M2.1 — Import, validate, and inspect sessions safely**
   - **Deliver:** Node/TypeScript code to find/import allowed local session directories, validate schemas and referenced media files, probe duration/fps, and reject malformed paths/invalid session states. Support configurable writable local storage.
   - **Done when:** Valid fixtures load; missing files, unsupported schemas, path traversal attempts and partial sessions produce actionable error states rather than crashes.
   - **Try:** Open a valid session and a deliberately damaged copy; compare the reported diagnostics.
+  - **Implemented:** Server-only `app/src/server/session-library.ts` discovers/loads UUID packages read-in-place under `POSTPLAY_SESSION_ROOT` or a writable XDG-compatible default. Bounded UTF-8/schema/cross-record checks, pinned-directory-FD traversal, no symlink/shared-hardlink/special files, explicit partial/error results and safe seekable-FD FFprobe metadata inspection. `just sessions`, `just session-inspect UUID`, `just ingestion-test`; usage/security/error guide in `docs/session-ingestion.md`. No extra backend, copying importer, dependency or raw-contract change.
+  - **Verified (2026-10-30):** Final `nix develop -c just check` passed **63 tests** (12 new ingestion tests), Godot smoke, zero type diagnostics and build. New tests cover valid AVI/OGV/non-faststart MP4, storage defaults/creation, path/URL traversal, malformed/unsupported/oversized/missing files, invalid anchors, partial captures, symlinks/hardlinks/FIFO, nested paths, pinned root replacement, media metadata mismatch, unavailable FFprobe, discovery cap and CLI exit codes. `just --fmt --check` and `git diff --check` passed. CLI listed/opened real `artifacts/editor capture-mAGzwr/sessions/aa2e6b72-7387-4a75-88f8-c8789f9051dd` (960×540/30 fps/6,000 ms, five events, verified sync unchanged); real forced-stop `artifacts/editor capture-GKzGaT/sessions/73632450-25c8-4564-a780-f601b0e0e4bb` returned partial_capture/exit 1. Earlier real fresh-project AVI retained unknown sync. No capture/API call or original-file rewrite.
+  - **Try it:** Set `POSTPLAY_SESSION_ROOT` to the absolute directory containing addon UUID folders, then run `nix develop -c just sessions` and `nix develop -c just session-inspect UUID`. A damaged copy produces a typed error/nonzero status, never a successful clean report. Default app storage and Godot user:// storage are not automatically the same; configure the root explicitly as documented.
+  - **Failures corrected / limits:** Initial TypeScript control-flow narrowing corrected; an uppercase-ID fixture mistakenly uppercased digits only, corrected to genuinely uppercase hex. OGV legitimately returned average rate 0/0; preserve it as null with a diagnostic instead of rejecting valid nominal-rate metadata. Missing-probe spawn initially held Node open for its 15-s timer; explicit error/close timer cleanup fixes it. Some Nix CLI checks required narrow escalation for sandbox Unix sockets. Linux /proc/self/fd required; root configuration is trusted, arbitrary same-user/codec attacks are not OS-sandboxed. Probe checks headers/metadata, not every decoded frame or measured cadence; no UI, conversion, inference or clean-result claim. Unknown sync/truncation remain warnings; partial packages are not promoted.
 - [ ] **M2.2 — Normalize media and telemetry for inference**
   - **Deliver:** Deterministic FFmpeg conversion to suitable MP4; bounded telemetry context with descriptions, event IDs, ordered timestamps, watched values, and optional annotations. Preserve linkable provenance and avoid leaking ground-truth bug modes.
   - **Done when:** Original files are unchanged, prepared MP4 plays, summary size/duration caps work, and a referenced telemetry event can be located in the original log.
@@ -343,6 +347,7 @@ Maintain this section whenever an implementation decision changes the path forwa
 | Model reasoning | Muse Spark required, AI-first | API access/media/schema limits or evidence quality | **M0.5:** one real MP4+telemetry strict-schema response validated with zero supported findings; Standard mode, deletion confirmed; compatibility demonstrated, detection quality unevaluated |
 | SAM 3.1 | Optional evidence tool | Core pipeline works and tracking clearly helps | **Not evaluated yet** |
 | Backend/data | Astro + Node/TypeScript; local JSON/JSONL | Concrete implementation blocker requiring architecture change | **No change approved** |
+| Session ingestion | Read-in-place UUID library under one trusted configured root | Concrete need for a different local import UX | **M2.1:** XDG/configured writable root, bounded/no-follow descriptor-based reads and FD-only probe; no recursive arbitrary-path browsing or copying. Average rate unavailable remains explicitly unknown; original media/logs untouched |
 | Dev environment | `nix develop` using supplied `nix/godot.nix` | Actual function compatibility issue | **M0.1 verified:** supplied Godot 4.7.2 launcher works; Node 24/npm selected; locked nixpkgs; x86_64 Linux |
 | Dashboard distribution | Secondary Nix package/app | Core demo complete and time remains | **Not started** |
 | Addon distribution | Optional Nix ZIP | Core demo and documentation complete | **Not started** |
@@ -355,8 +360,8 @@ Maintain this section whenever an implementation decision changes the path forwa
 
 ### Latest handoff
 
-- **Last completed task:** M1.7 fresh-project addon integration. Copied only addon into independent project, enabled from scratch, recorded no-hook then existing signal/property watches; actual AVI/contracts/settings/ordinary run/disable checks passed. 51-test/type/build/smoke regression passed. Artifacts: `artifacts/fresh project-W4obPD/`; installation guide: `docs/addon-integration.md`. Prior M1.6 commit `17f8cae`; measured sync evidence remains `artifacts/editor capture-mAGzwr/`.
-- **Next recommended task:** M2.1 safe ingestion is now active; M1 explicitly approved on 2026-10-30. No repeat paid smoke needed.
+- **Last completed task:** M2.1 safe session ingestion. Read-in-place library/CLI, bounded validated metadata/events, no-follow filesystem containment and FD-only FFprobe passed 12 new tests and full 63-test/type/build/smoke regression. Real M1 complete and interrupted packages checked with explicit outcomes. Guide: `docs/session-ingestion.md`; M1 owner approval recorded in `2033686` on 2026-10-30. No new paid call.
+- **Next recommended task:** M2.2 MP4/telemetry preparation; establish active checkpoint, preserve sources and explicit timing/trim offsets, bound media/context and retain original evidence references. Reuse M1 artifacts; no repeat paid smoke needed.
 - **Pending owner verification:** M0 and M1 are explicitly approved. Future M2 exit gate remains pending real pipeline implementation/verification.
 - **Known failures / deferred work:** Old crop disclosed to model; headless M0 API probe shutdown leak diagnostics remain. M1.5 harness/PID/UID failures corrected; supplied libdecor/Wayland warnings remain. Initial M0.5 Node type/return-type errors corrected before live call. No extra live error tests or six-session evaluation performed. Optional SAM and distribution packaging remain unstarted.
 

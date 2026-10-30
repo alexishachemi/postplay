@@ -42,6 +42,18 @@ record:
 test:
     npm --prefix app test
 
+# Safe local package loading/probing and malformed/path/partial-session fixtures.
+ingestion-test:
+    node --test app/tests/session-library.test.ts
+
+# List UUID packages in POSTPLAY_SESSION_ROOT (or XDG default); no upload.
+sessions:
+    node app/scripts/sessions.ts list
+
+# Validate/probe one library session; prints diagnostics, not raw event payloads.
+session-inspect id:
+    node app/scripts/sessions.ts inspect "$1"
+
 # Run the deterministic Godot smoke scene test; no recording or remote requests.
 smoke-test:
     godot --headless --path demo --script res://tests/smoke_scene_test.gd
