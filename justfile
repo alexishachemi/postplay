@@ -54,6 +54,14 @@ sessions:
 session-inspect id:
     node app/scripts/sessions.ts inspect "$1"
 
+# Prepare a measured session locally; optionally append START_MS DURATION_MS. No upload.
+session-prepare id *args:
+    node app/scripts/prepare-session.ts "$@"
+
+# Deterministic context/clip/provenance/conversion-failure checks; no API requests.
+preparation-test:
+    node --test app/tests/preparation.test.ts
+
 # Run the deterministic Godot smoke scene test; no recording or remote requests.
 smoke-test:
     godot --headless --path demo --script res://tests/smoke_scene_test.gd

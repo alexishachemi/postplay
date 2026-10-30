@@ -79,7 +79,8 @@ remains visible in the report. It must not be displayed as precise alignment.
 For a derived MP4, `mapToDerivedVideo` subtracts its explicit **actual** source
 trim start; timestamps outside the derived interval stay outside. Transcoding
 without trimming uses a zero offset. A requested FFmpeg seek is not evidence of
-the actual first encoded timestamp. Media preparation/probing remains M2.2.
+the actual first encoded timestamp. The [preparation workflow](session-preparation.md)
+measures retained frame PTS, verifies derived timestamps and records the actual offset.
 Original event clocks are never rewritten. External MP4 wall/simulation mappings
 are supported mathematically, but the conditional external-recording import
 fallback has not been triggered or claimed tested: Movie Maker works here.

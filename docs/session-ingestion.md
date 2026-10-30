@@ -1,8 +1,9 @@
 # Open and inspect saved sessions locally
 
 M2.1 provides a server-only **read-in-place** session library and a diagnostic CLI.
-There is no copying importer, media endpoint, dashboard UI, conversion or model
-submission yet. Completed packages can be checked with no Godot editor running
+There is no copying importer, media endpoint, dashboard UI or model submission
+yet. [Preparation](session-preparation.md) is a separate local command, not a side
+effect of inspection. Completed packages can be checked with no Godot editor running
 and no API key or network request.
 
 ## Choose the library
@@ -63,7 +64,7 @@ Unknown synchronization and truncated telemetry remain diagnostics, not fabricat
 alignment/full coverage. A successful inspection is **not** an analyzed clean
 report or a guarantee of every frame's decodability/cadence. Header inspection
 does not repeat M1's full decode or prove a visible timing anchor; media preparation
-and analysis are subsequent tasks. A missing average rate does not establish that
+is separate, and analysis remains a later task. A missing average rate does not establish that
 the recording is variable-rate either.
 
 ## Errors and recovery

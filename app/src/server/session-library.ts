@@ -4,6 +4,7 @@ import { open, mkdir, realpath, access, opendir, type FileHandle } from 'node:fs
 import { isAbsolute, join } from 'node:path';
 import { homedir } from 'node:os';
 import { spawn } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { CONTRACT_LIMITS, validateSession, validateSessionPackage, type Session, type Event } from './session-contract.ts';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
@@ -14,7 +15,7 @@ export interface Diagnostic { code: ErrorCode; message: string }
 export interface MediaInfo { duration_ms: number; fps: number; average_fps: number | null; width: number; height: number; bytes: number }
 export type Inspection = { ok: true; session: Session; events: Event[]; media: MediaInfo; diagnostics: string[] }
   | { ok: false; error: Diagnostic };
-class IngestionError extends Error {
+export class IngestionError extends Error {
   code: ErrorCode;
   constructor(code: ErrorCode, message: string) { super(message); this.code = code; }
 }
@@ -32,7 +33,7 @@ export function sessionRoot(env: NodeJS.ProcessEnv = process.env, home = homedir
 
 /** Pin each directory component via its open FD. Untrusted components cannot
  * redirect traversal between realpath checks and open; /proc is a Linux prerequisite. */
-async function child(parent: FileHandle, name: string, directory = false): Promise<FileHandle> {
+export async function openPackageChild(parent: FileHandle, name: string, directory = false): Promise<FileHandle> {
   if (!name || name === '.' || name === '..' || /[\/\\\x00]/u.test(name)) fail('unsafe_file', 'Invalid package path component.');
   let handle: FileHandle;
   try { handle = await open(`/proc/self/fd/${parent.fd}/${name}`, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK | (directory ? constants.O_DIRECTORY : 0)); }
@@ -66,7 +67,7 @@ async function text(handle: FileHandle, limit: number): Promise<string> {
 }
 async function readText(directory: FileHandle, name: string, limit: number): Promise<string> {
   let file: FileHandle;
-  try { file = await child(directory, name); }
+  try { file = await openPackageChild(directory, name); }
   catch (error) { if (error instanceof IngestionError && error.code === 'not_found') return fail('not_found', `Required ${name} is missing from the session.`); throw error; }
   try { return await text(file, limit); } finally { await file.close(); }
 }
@@ -76,19 +77,19 @@ async function mediaFile(directory: FileHandle, path: string): Promise<FileHandl
   let parent = directory;
   try {
     for (const part of parts.slice(0, -1)) {
-      const next = await child(parent, part, true);
+      const next = await openPackageChild(parent, part, true);
       if (parent !== directory) await parent.close();
       parent = next;
     }
-    return await child(parent, parts.at(-1)!);
+    return await openPackageChild(parent, parts.at(-1)!);
   } finally { if (parent !== directory) await parent.close(); }
 }
 
-async function probe(file: FileHandle, format: Session['capture']['format']): Promise<unknown> {
+export async function probeVideo(file: FileHandle, format: Session['capture']['format']): Promise<unknown> {
   const demuxer = { avi: 'avi', ogv: 'ogg', mp4: 'mov' }[format];
   const args = ['-v', 'error', '-protocol_whitelist', 'fd', '-format_whitelist', demuxer, '-f', demuxer,
     '-probesize', '8388608', '-analyzeduration', '5000000', '-select_streams', 'v:0',
-    '-show_entries', 'stream=width,height,r_frame_rate,avg_frame_rate:format=duration', '-of', 'json', '-fd', '0', '-i', 'fd:'];
+    '-show_entries', 'stream=width,height,r_frame_rate,avg_frame_rate,codec_name,pix_fmt:format=duration', '-of', 'json', '-fd', '0', '-i', 'fd:'];
   return await new Promise((resolve, reject) => {
     const probeProcess = spawn('ffprobe', args, { shell: false,
       stdio: [file.fd, 'pipe', 'pipe'], env: { PATH: process.env.PATH, LANG: 'C', AV_LOG_FORCE_NOCOLOR: '1' } });
@@ -167,12 +168,22 @@ export class SessionLibrary {
   }
 
   async inspect(id: unknown): Promise<Inspection> {
+    try { return await this.withSource(id, async source => source.inspection); }
+    catch (error) {
+      return { ok: false, error: error instanceof IngestionError ? { code: error.code, message: error.message } : { code: 'unsafe_file', message: 'Session could not be read safely; check files and permissions.' } };
+    }
+  }
+
+  /** Trusted server operations only. Do not retain/close borrowed handles or expose
+   * them to clients. The callback completes before the pinned handles are closed. */
+  async withSource<T>(id: unknown, use: (source: SessionSource) => Promise<T>): Promise<T> {
     let directory: FileHandle | undefined;
     try {
       if (typeof id !== 'string' || !UUID.test(id)) fail('invalid_id', 'Choose a canonical session UUID from the configured library; paths are not accepted.');
-      directory = await child(this.#root, id, true);
+      directory = await openPackageChild(this.#root, id, true);
       let manifest: unknown;
-      try { manifest = JSON.parse(await readText(directory, 'session.json', CONTRACT_LIMITS.manifestBytes)); }
+      let rawManifest: string;
+      try { rawManifest = await readText(directory, 'session.json', CONTRACT_LIMITS.manifestBytes); manifest = JSON.parse(rawManifest); }
       catch (error) { if (error instanceof IngestionError) throw error; return fail('invalid_manifest', 'Cannot parse session.json as bounded UTF-8 JSON.'); }
       if (!object(manifest)) fail('invalid_manifest', 'Session manifest must be an object.');
       if (manifest.schema_version !== '1') fail('unsupported_schema', 'Unsupported session schema version; only raw v1 packages can be opened.');
@@ -191,15 +202,25 @@ export class SessionLibrary {
       try {
         const info = await file.stat();
         if (info.size <= 0) fail('probe_failed', 'The original video is empty.');
-        const media = mediaInfo(await probe(file, session.capture.format), session, info.size);
+        const media = mediaInfo(await probeVideo(file, session.capture.format), session, info.size);
         const after = await file.stat();
         if (after.size !== info.size || after.mtimeMs !== info.mtimeMs) fail('media_mismatch', 'Video changed while being inspected; retry after recording has stopped.');
         const diagnostics = [...parsed.diagnostics];
         if (media.average_fps === null) diagnostics.push('Average video frame rate unavailable; only nominal fps was checked, not per-frame cadence.');
-        return { ok: true, session, events: parsed.events, media, diagnostics };
+        const pinned = directory;
+        return await use({ inspection: { ok: true, session, events: parsed.events, media, diagnostics }, directory, video: file,
+          manifest_sha256: createHash('sha256').update(rawManifest).digest('hex'), events_sha256: createHash('sha256').update(log).digest('hex'),
+          assertUnchanged: async () => {
+            if (await readText(pinned, 'session.json', CONTRACT_LIMITS.manifestBytes) !== rawManifest || await readText(pinned, 'events.jsonl', CONTRACT_LIMITS.logBytes) !== log) fail('unsafe_file', 'Source metadata changed during processing; retry with immutable originals.');
+          } });
       } finally { await file.close(); }
-    } catch (error) {
-      return { ok: false, error: error instanceof IngestionError ? { code: error.code, message: error.message } : { code: 'unsafe_file', message: 'Session could not be read safely; check files and permissions.' } };
     } finally { await directory?.close(); }
   }
+}
+
+export interface SessionSource {
+  inspection: Extract<Inspection, { ok: true }>;
+  directory: FileHandle; video: FileHandle;
+  manifest_sha256: string; events_sha256: string;
+  assertUnchanged(): Promise<void>;
 }

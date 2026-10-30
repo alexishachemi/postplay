@@ -66,16 +66,25 @@ export function measureSynchronization(session: Session, events: Event[], clock:
 
 /** Explicit anchor offset; no assumption that engine frame zero is movie frame zero. */
 export function mapEventToVideo(session: Session, events: Event[], eventId: string): MappedTime {
+  return createVideoMapper(session, events)(eventId);
+}
+
+/** Validate once for bounded bulk normalization rather than reparse a log per event. */
+export function createVideoMapper(session: Session, events: Event[]): (eventId: string) => MappedTime {
   checked(session, events);
-  const event = events.find(event => event.id === eventId);
-  requireValue(event, 'Unknown event');
-  const { anchor, estimated_error_ms: error } = session.synchronization;
-  if (!anchor) return { status: 'unknown', reason: 'No measured video anchor.' };
-  const value = event.time[anchor.clock];
-  if (value === null) return { status: 'unknown', reason: 'Event lacks the anchor clock.' };
-  const video = anchor.video_ms + (value - anchor.recorded_value) * scale(session, anchor.clock);
-  if (session.capture.duration_ms === null || video < 0 || video >= session.capture.duration_ms) return { status: 'outside', reason: 'Mapped event is outside measured media; not clamped.' };
-  return { status: 'mapped', video_ms: video, estimated_error_ms: error! };
+  const byId = new Map(events.map(event => [event.id, event]));
+  return eventId => {
+    const event = byId.get(eventId);
+    requireValue(event, 'Unknown event');
+    const { anchor, estimated_error_ms: error } = session.synchronization;
+    if (!anchor) return { status: 'unknown', reason: 'No measured video anchor.' };
+    const value = event.time[anchor.clock];
+    if (value === null) return { status: 'unknown', reason: 'Event lacks the anchor clock.' };
+    const delta = value - anchor.recorded_value;
+    const video = anchor.video_ms + (anchor.clock === 'process_frame' ? delta * 1000 / session.capture.fps : delta * scale(session, anchor.clock));
+    if (session.capture.duration_ms === null || video < 0 || video >= session.capture.duration_ms) return { status: 'outside', reason: 'Mapped event is outside measured media; not clamped.' };
+    return { status: 'mapped', video_ms: video, estimated_error_ms: error! };
+  };
 }
 
 /** For a derived clip, record the ACTUAL source trim start, not a guessed FFmpeg seek.

@@ -56,6 +56,8 @@ Godot/Node/FFmpeg prerequisites.
 | `just contract-test` | Raw session/event contracts, fixtures and Godot-to-Node serialization checks |
 | `just ingestion-test` | Safe library loading, media probes, malformed/partial/path fixtures |
 | `just sessions` / `just session-inspect UUID` | List/inspect POSTPLAY_SESSION_ROOT (or XDG default); no upload |
+| `just session-prepare UUID [START_MS DURATION_MS]` | Prepare bounded MP4 + correlated context locally; requires measured synchronization |
+| `just preparation-test` | Context/evidence/timing/media conversion and failure fixtures |
 | `just capture-test` | Godot runtime lifecycle, limits and forced-exit recovery; synthetic data only |
 | `just watch-test` | Existing signals/properties, safe sampling and cleanup in Godot |
 | `just observation-test` | Demo input/movement, text-focus privacy and optional semantic context |
@@ -93,8 +95,10 @@ keeps its separate format.
 
 M1 is owner-approved. [Local session ingestion](docs/session-ingestion.md) now
 loads and probes saved packages from a configured library, with explicit errors
-for damaged/partial captures. Conversion, general analysis and dashboard review
-remain subsequent M2/M3 work; successful inspection is not a clean model report.
+for damaged/partial captures. [Media/context preparation](docs/session-preparation.md)
+now creates bounded MP4s and evidence-linkable context while preserving originals.
+General analysis and dashboard review remain subsequent M2/M3 work; successful
+inspection/preparation is not a clean model report and does not upload anything.
 
 ## Initial application skeletons
 
