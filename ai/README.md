@@ -88,9 +88,10 @@ Additional local policy rejects:
 Passing these checks proves **contract consistency, not the truth of the model's
 prose or the existence of a bug**. An in-window video timestamp does not prove an
 observation occurred, and a matching event ID does not prove its description.
-Raw-package provenance checks, interpretation/uncertainty handling and offline
-report persistence remain M2.5 work. No HTML sanitization, semantic truth verifier,
-automatic confidence downgrade or confirmed-softlock detector is claimed here.
+The M2.5 [offline report layer](../docs/findings-reports.md) now adds raw-package
+provenance checks, exact snapshots, uncertainty flags and high-certainty quarantine.
+No HTML sanitization, semantic truth verifier, automatic confidence downgrade or
+confirmed-softlock detector is claimed here.
 
 Run `nix develop -c just ai-contract-test` for synthetic positive/negative contract
 cases and mocked network/error/cleanup tests. This command makes no paid request
@@ -98,8 +99,8 @@ and does not measure real model performance.
 
 The [M2.4 submission guide](../docs/session-analysis.md) documents the implemented
 server-only prepared-session adapter, preview/consent, one-attempt reservation,
-resource limits, proposal/usage stages and cleanup-only retry. It does not yet
-claim the M2.5 evidence-reviewed report or M3 dashboard is implemented.
+resource limits, proposal/usage stages and cleanup-only retry. Reports are built
+separately and offline; no M3 dashboard implementation is claimed.
 
 ## 6. SAM 3.1 optional follow-up
 

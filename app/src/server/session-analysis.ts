@@ -2,9 +2,9 @@ import { constants } from 'node:fs';
 import { mkdir, open, readFile, type FileHandle } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
-import { SessionLibrary, openPackageChild, probeVideo } from './session-library.ts';
+import { SessionLibrary, openPackageChild, probeVideo, type SessionSource } from './session-library.ts';
 import { normalizeContext, PREPARATION_LIMITS } from './preparation-context.ts';
-import { validateContext, resultSchema } from './analysis-validation.ts';
+import { validateContext, resultSchema, type Context } from './analysis-validation.ts';
 import { analyzeMuse, API_LIMITS, MODEL, ModelError, record } from './muse-api.ts';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
@@ -19,7 +19,7 @@ export function analysisDuration(env: NodeJS.ProcessEnv = process.env): number {
   if (!/^\d+$/.test(value) || !Number.isSafeInteger(Number(value)) || Number(value) <= 0 || Number(value) > PREPARATION_LIMITS.duration_ms) throw new ModelError('analysis_limit', 'POSTPLAY_ANALYSIS_MAX_DURATION_MS must be 1–120000');
   return Number(value);
 }
-async function bytes(directory: FileHandle, name: string, maximum: number): Promise<Buffer> {
+export async function readPackageBytes(directory: FileHandle, name: string, maximum: number): Promise<Buffer> {
   const file = await openPackageChild(directory, name);
   try {
     const before = await file.stat();
@@ -56,18 +56,18 @@ async function save(directory: FileHandle, name: string, value: unknown, key: st
 }
 export interface AnalysisOptions { upload_to_meta?: boolean; apiKey?: string; max_duration_ms?: number; fetcher?: typeof fetch }
 
-/** Preview is read-only. Consent reserves exactly one attempt per preparation.
- * The loaded byte snapshots, not mutable filenames, are passed to the API. */
-export async function analyzeSession(library: SessionLibrary, id: string, preparationId: string, options: AnalysisOptions = {}) {
+interface PreparedInput { manifest: Record<string, unknown> & { clip_duration_ms: number; source_start_ms: number; conversion_error_ms: number }; manifestBytes: Buffer; contextBytes: Buffer; context: Context; video: Buffer }
+/** Borrow pinned files and validated snapshots for this callback only; no upload. */
+export async function withPreparedSession<T>(library: SessionLibrary, id: string, preparationId: string, maximum: number,
+  use: (source: SessionSource, prepared: FileHandle, input: PreparedInput) => Promise<T>): Promise<T> {
   if (!UUID.test(preparationId)) throw new ModelError('invalid_id', 'Use a preparation UUID, not a filesystem path');
-  const maximum = options.max_duration_ms ?? analysisDuration();
   if (!Number.isSafeInteger(maximum) || maximum <= 0 || maximum > PREPARATION_LIMITS.duration_ms) throw new ModelError('analysis_limit', 'Analysis duration limit must be 1–120000 ms');
   return await library.withSource(id, async source => {
     const parent = await openPackageChild(source.directory, 'preparations', true);
     let prepared: FileHandle;
     try { prepared = await openPackageChild(parent, preparationId, true); } finally { await parent.close(); }
     try {
-      const manifestBytes = await bytes(prepared, 'preparation.json', 32768);
+      const manifestBytes = await readPackageBytes(prepared, 'preparation.json', 32768);
       let manifest: unknown;
       try { manifest = JSON.parse(manifestBytes.toString('utf8')); } catch { throw new ModelError('invalid_preparation', 'Invalid preparation marker'); }
       if (!record(manifest)) throw new ModelError('invalid_preparation', 'Invalid preparation marker');
@@ -76,8 +76,8 @@ export async function analyzeSession(library: SessionLibrary, id: string, prepar
       requireValid(manifest.source_manifest_sha256 === source.manifest_sha256 && manifest.source_events_sha256 === source.events_sha256, 'Source telemetry/manifest changed since preparation');
       requireValid(typeof manifest.clip_duration_ms === 'number' && Number.isSafeInteger(manifest.clip_duration_ms) && manifest.clip_duration_ms > 0 && manifest.clip_duration_ms <= maximum, 'Clip exceeds configured analysis duration');
       requireValid(typeof manifest.source_start_ms === 'number' && Number.isFinite(manifest.source_start_ms) && typeof manifest.conversion_error_ms === 'number', 'Invalid preparation timing');
-      const contextBytes = await bytes(prepared, 'context.json', PREPARATION_LIMITS.context_bytes);
-      const video = await bytes(prepared, 'clip.mp4', API_LIMITS.video_bytes);
+      const contextBytes = await readPackageBytes(prepared, 'context.json', PREPARATION_LIMITS.context_bytes);
+      const video = await readPackageBytes(prepared, 'clip.mp4', API_LIMITS.video_bytes);
       requireValid(manifest.context_sha256 === hash(contextBytes) && manifest.clip_sha256 === hash(video)
         && manifest.context_bytes === contextBytes.length && manifest.video_bytes === video.length, 'Prepared input hashes/lengths changed');
       const context = validateContext(JSON.parse(contextBytes.toString('utf8')));
@@ -93,6 +93,16 @@ export async function analyzeSession(library: SessionLibrary, id: string, prepar
           && record(info.format) && Math.abs(Number(info.format.duration) * 1000 - manifest.clip_duration_ms) <= 1, 'Prepared media does not match the declared clip');
       } finally { await clip.close(); }
       await source.assertUnchanged();
+      return await use(source, prepared, { manifest: { ...manifest, clip_duration_ms: manifest.clip_duration_ms, source_start_ms: manifest.source_start_ms, conversion_error_ms: manifest.conversion_error_ms }, manifestBytes, contextBytes, context, video });
+    } finally { await prepared.close(); }
+  });
+}
+
+/** Preview is read-only. Consent reserves exactly one attempt per preparation.
+ * The loaded byte snapshots, not mutable filenames, are passed to the API. */
+export async function analyzeSession(library: SessionLibrary, id: string, preparationId: string, options: AnalysisOptions = {}) {
+  const maximum = options.max_duration_ms ?? analysisDuration();
+  return await withPreparedSession(library, id, preparationId, maximum, async (_source, prepared, { manifest, manifestBytes, contextBytes, context, video }) => {
       const preview = { session_id: id, preparation_id: preparationId, model: MODEL, data_use_mode: 'Standard',
         video_bytes: video.length, context_bytes: contextBytes.length, events: context.events.length, duration_ms: manifest.clip_duration_ms,
         max_duration_ms: maximum, max_video_bytes: API_LIMITS.video_bytes, max_context_bytes: API_LIMITS.context_bytes,
@@ -125,6 +135,5 @@ export async function analyzeSession(library: SessionLibrary, id: string, prepar
           message: error instanceof ModelError ? error.message : 'Local analysis failed; inspect saved stages. Remote outcome may be unknown. Do not automatically retry.' });
         throw error;
       } finally { await run.close(); }
-    } finally { await prepared.close(); }
   });
 }

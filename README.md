@@ -61,6 +61,9 @@ Godot/Node/FFmpeg prerequisites.
 | `just session-analyze UUID PREPARATION_UUID --upload-to-meta` | **PAID:** explicitly upload selected video/telemetry; one attempt per preparation |
 | `just upload-cleanup FILE_ID` | Delete only a confirmed remote upload; no inference |
 | `just analysis-test` | Consent/provenance/reservation and mocked API failure/cleanup tests; no upload |
+| `just session-report UUID PREPARATION_UUID` | Create/reuse an evidence-linked report from the saved response; no upload |
+| `just session-report-read UUID PREPARATION_UUID` | Revalidate and print an existing report offline |
+| `just report-test` | Report grounding, quarantine, corruption and offline-reopen fixtures |
 | `just preparation-test` | Context/evidence/timing/media conversion and failure fixtures |
 | `just ai-contract-test` | Versioned AI prompts/results, evidence references, bounds and mocked API failures; no upload |
 | `just capture-test` | Godot runtime lifecycle, limits and forced-exit recovery; synthetic data only |
@@ -104,8 +107,11 @@ for damaged/partial captures. [Media/context preparation](docs/session-preparati
 now creates bounded MP4s and evidence-linkable context while preserving originals.
 [Explicit Muse submission](docs/session-analysis.md) now accepts prepared sessions
 through the CLI, saving contract-valid proposals and truthful failure/cleanup
-states. Evidence-reviewed reports and dashboard review remain M2.5/M3 work;
-inspection/preparation/preview do not upload or imply a clean report.
+states. [Versioned offline reports](docs/findings-reports.md) now link model
+hypotheses to raw evidence, retain uncertainty and quarantine unsupported high
+certainty. Model prose/visual claims remain unverified, not demonstrated facts.
+Dashboard review remains M3 work; inspection/preparation/preview/report commands
+do not upload or imply a clean game.
 
 ## Initial application skeletons
 

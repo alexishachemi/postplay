@@ -1,9 +1,16 @@
-# Portable raw capture contracts — v1
+# Portable capture and report contracts — v1
 
 These contracts describe Godot capture evidence, independently of the normalized
 Muse input/proposal contracts in `ai/`. All three raw schemas use
 `schema_version: "1"` where applicable. Incompatible changes require a new version.
 Schema `$id` URLs identify locally loaded schemas; validation never fetches them.
+
+`findings.v1.schema.json` additionally defines the backend's saved evidence-linked
+report, not a raw Godot file or a Muse response. Its report/policy versions, outcome
+states, raw snapshots, provenance and quarantine rules are documented in
+[offline reports](../docs/findings-reports.md). It references the checked-in raw
+schemas and approved AI proposal/input schemas; all references are registered
+locally by `app/src/server/findings-report.ts`. No v1 capture/AI schema was changed.
 
 A package contains `session.json`, `events.jsonl` and the original video declared
 by `capture.video_path`. Derived videos and analysis outputs must preserve these

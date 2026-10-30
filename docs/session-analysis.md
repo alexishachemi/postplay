@@ -2,9 +2,10 @@
 
 The CLI uses the same server-side adapter that the future dashboard can call.
 There is no second web server and no browser API credential. M2.4 saves a
-**contract-valid proposal**, not an evidence-reviewed `findings.json` report.
-Raw-evidence review, offline report format and dashboard inspection are subsequent
-M2.5/M3 tasks. An empty proposal means no supported findings in this excerpt,
+**contract-valid proposal**, not a final `findings.json` report.
+Next, [create/reopen the evidence-linked offline report](findings-reports.md)
+without another API call. Human interpretation and dashboard inspection remain
+separate from machine validation. An empty proposal means no supported findings in this excerpt,
 not proof of a bug-free game.
 
 ## Preview, then explicitly submit

@@ -70,6 +70,18 @@ upload-cleanup file_id:
 analysis-test:
     node --test app/tests/session-analysis.test.ts app/tests/muse-api.test.ts
 
+# Create/reuse a versioned evidence-linked report from saved analysis; entirely local.
+session-report id preparation:
+    node app/scripts/session-report.ts create "$@"
+
+# Revalidate and print an existing report offline; no writes or API key required.
+session-report-read id preparation:
+    node app/scripts/session-report.ts read "$@"
+
+# Report grounding, quarantine, stage consistency, corruption and offline reopen fixtures.
+report-test:
+    node --test app/tests/findings-report.test.ts
+
 # Deterministic context/clip/provenance/conversion-failure checks; no API requests.
 preparation-test:
     node --test app/tests/preparation.test.ts
