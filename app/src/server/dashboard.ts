@@ -31,7 +31,7 @@ async function has(directory: FileHandle, name: string, isDirectory = false): Pr
   try { const file = await openPackageChild(directory, name, isDirectory); await file.close(); return true; }
   catch (error) { if (error instanceof IngestionError && error.code === 'not_found') return false; throw error; }
 }
-async function latestPreparation(library: SessionLibrary, id: string): Promise<string | null> {
+export async function latestPreparation(library: SessionLibrary, id: string): Promise<string | null> {
   return await library.withDirectory(id, async directory => {
     if (!await has(directory, 'preparations', true)) return null;
     const parent = await openPackageChild(directory, 'preparations', true);

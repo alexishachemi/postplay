@@ -114,8 +114,10 @@ hypotheses to raw evidence, retain uncertainty and quarantine unsupported high
 certainty. Model prose/visual claims remain unverified, not demonstrated facts.
 The [local dashboard](docs/dashboard.md) lists sessions, displays metadata/status,
 and plays local MP4s with native controls, numeric seeking and explicit clip/source
-timing. It can create a local-only browser preview before analysis. Analysis
-controls and finding navigation remain subsequent M3 tasks. Browsing, inspection/preparation/preview/report commands
+timing. It can create a local-only browser preview, prepare an explicit analysis
+clip, and submit it after a separate Meta upload consent checkbox. Status/errors,
+one-attempt protection and offline report recovery are available; finding navigation
+remains the next M3 task. Browsing, inspection/preparation/preview/report commands
 do not upload or imply a clean game.
 
 The [M2 real smoke audit](docs/m2-smoke-audit.md) records the verified capture →
@@ -137,7 +139,9 @@ godot --editor --path demo
 
 Open <http://127.0.0.1:4321> to browse the configured session library; set
 `POSTPLAY_SESSION_ROOT` before starting the app. Recording/analysis is still
-CLI/editor-driven; the dashboard's preview action only converts local video. Astro 7 starts
+editor-driven; analysis is now available through explicit dashboard consent or the
+CLI. Preview/preparation actions only process local files. App commands honor
+standard Node environment proxy settings for server-side Meta requests. Astro 7 starts
 its development server in the background; stop it from `app/` with
 `npx astro dev stop`. The production server starts after a build with
 `npm --prefix app start`, also bound to loopback by default.

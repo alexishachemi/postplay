@@ -88,7 +88,7 @@ pipeline-test:
 
 # Session/status fixtures plus actual bundled HTTP UI/API checks; no uploads.
 dashboard-test:
-    node --test app/tests/dashboard.test.ts
+    node --test app/tests/dashboard.test.ts app/tests/dashboard-analysis.test.ts
 
 # Deterministic context/clip/provenance/conversion-failure checks; no API requests.
 preparation-test:

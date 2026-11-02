@@ -171,11 +171,11 @@ test('byte range responses support seeks, suffixes, HEAD and safe unsatisfiable 
 // resource URLs that change depth when Astro emits server/chunks modules.
 const app = new URL('../', import.meta.url).pathname;
 execFileSync('npm', ['run', 'build'], { cwd: app, stdio: 'pipe', timeout: 30000 });
-async function withServer(libraryRoot: string, use: (base: string) => Promise<void>) {
+async function withServer(libraryRoot: string, use: (base: string) => Promise<void>, credential = 'fixture-sensitive-key') {
   const reservation = createServer(); reservation.listen(0, '127.0.0.1'); await once(reservation, 'listening');
   const address = reservation.address(); assert.ok(address && typeof address !== 'string'); const port = address.port;
   await new Promise<void>(resolve => reservation.close(() => resolve()));
-  const child = spawn(process.execPath, [join(app, 'dist/server/entry.mjs')], { cwd: tmpdir(), stdio: 'ignore', env: { ...process.env, HOST: '127.0.0.1', PORT: String(port), MODEL_API_KEY: 'fixture-sensitive-key', POSTPLAY_SESSION_ROOT: libraryRoot } });
+  const child = spawn(process.execPath, [join(app, 'dist/server/entry.mjs')], { cwd: tmpdir(), stdio: 'ignore', env: { ...process.env, HOST: '127.0.0.1', PORT: String(port), MODEL_API_KEY: credential, POSTPLAY_SESSION_ROOT: libraryRoot } });
   const base = `http://127.0.0.1:${port}`;
   try {
     let ready = false;
@@ -230,4 +230,35 @@ test('production HTTP renders escaped/selectable sessions, metadata APIs and saf
   const empty = mkdtempSync(join(root, 'empty-'));
   await withServer(empty, async base => { const r = await fetch(base); assert.equal(r.status, 200); assert.match(await r.text(), /No sessions yet/); });
   await withServer(join(root, 'fixture.avi'), async base => { const r = await fetch(base); assert.equal(r.status, 503); assert.match(await r.text(), /Session library unavailable/); });
+});
+
+test('production analysis API requires exact consent, origin, bounded JSON and server credentials', async () => {
+  const dir = mkdtempSync(join(root, 'analysis-http-')), f = capture(dir);
+  await withServer(dir, async base => {
+    const endpoint = base + '/api/sessions/' + f.id + '/analysis';
+    const post = (body: unknown, origin = base) => fetch(endpoint, { method: 'POST', headers: { origin, 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    const prepare = { action: 'prepare', start_ms: 0, duration_ms: 2000, reviewed_previous_attempt: false };
+    assert.equal((await post(prepare, 'https://attacker.invalid')).status, 403);
+    assert.equal((await fetch(endpoint, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(prepare) })).status, 403);
+    assert.equal((await post({ ...prepare, unexpected: true })).status, 400);
+    assert.equal((await post({ padding: 'x'.repeat(1025) })).status, 413);
+    assert.equal((await fetch(endpoint, { method: 'POST', headers: { origin: base, 'content-type': 'application/json' }, body: '{' })).status, 400);
+    assert.equal((await fetch(endpoint + '?preparation=../../.env')).status, 400);
+    assert.equal((await fetch(endpoint + '?apiKey=secret')).status, 400);
+    const initial = await (await fetch(endpoint)).json(); assert.equal(initial.phase, 'unprepared'); assert.equal(initial.credentials_configured, false);
+    const ready = await post(prepare); assert.equal(ready.status, 200); const data = await ready.json(); assert.equal(data.remote_upload, false);
+    const view = await (await fetch(endpoint)).json(); assert.equal(view.phase, 'ready'); assert.ok(view.preparation.video_bytes > 0);
+    const html = await (await fetch(base + '/?session=' + f.id)).text(); assert.match(html, /I consent to uploading/); assert.match(html, /Prepared upload/); assert.match(html, /not configured on this server/);
+    assert.ok(!html.includes(dir));
+    assert.equal((await post({ action: 'analyze', preparation_id: data.preparation_id, upload_to_meta: false })).status, 400);
+    const denied = await post({ action: 'analyze', preparation_id: data.preparation_id, upload_to_meta: true }); assert.equal(denied.status, 422); assert.equal((await denied.json()).error.code, 'credentials_missing');
+    assert.ok(!readdirSync(join(f.directory, 'preparations', data.preparation_id)).includes('analysis'));
+    const library = await SessionLibrary.create(dir);
+    try {
+      await assert.rejects(analyzeSession(library, f.id, data.preparation_id, { upload_to_meta: true, apiKey: 'fixture-sensitive-key', fetcher: async () => Response.json({ error: { code: 'bad_key', message: 'fixture-sensitive-key /private/provider/body' } }, { status: 401 }) }));
+    } finally { await library.close(); }
+    const failed = await (await fetch(endpoint)).json(); assert.equal(failed.phase, 'failed'); assert.equal(failed.code, 'authentication_failed');
+    const failureHtml = await (await fetch(base + '/?session=' + f.id)).text(); assert.match(failureHtml, /Meta rejected the server credential/); assert.match(failureHtml, /already reserved an attempt/);
+    assert.ok(!failureHtml.includes('fixture-sensitive-key') && !failureHtml.includes('/private/provider/body'));
+  }, '');
 });

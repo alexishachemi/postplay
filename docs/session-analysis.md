@@ -1,6 +1,6 @@
 # Submit a prepared session to Muse
 
-The CLI uses the same server-side adapter that the future dashboard can call.
+The CLI and [dashboard controls](dashboard.md#analysis-controls-and-consent) use the same server-side adapter.
 There is no second web server and no browser API credential. M2.4 saves a
 **contract-valid proposal**, not a final `findings.json` report.
 Next, [create/reopen the evidence-linked offline report](findings-reports.md)

@@ -1,0 +1,85 @@
+---
+import type { AnalysisView } from '../server/dashboard-analysis.ts';
+interface Props { id: string; view: AnalysisView; duration_ms: number | null }
+const { id, view, duration_ms: duration } = Astro.props;
+const prepared = view.preparation;
+const canAnalyze = prepared && view.phase === 'ready' && !view.active && !view.reserved && view.credentials_configured;
+---
+<section data-analysis data-endpoint={`/api/sessions/${id}/analysis`} data-active={String(view.active)} data-preparation={prepared?.id ?? ''} aria-labelledby="analysis-heading" class="mt-6 border-t border-slate-800 pt-6">
+  <h3 id="analysis-heading" class="font-medium">Analyze with Muse Spark</h3>
+  <p class="mt-3 text-xs leading-5 text-slate-400">Prepare locally, review the clip and upload sizes, then explicitly consent. Browsing and preparation never upload. Muse Spark (muse-spark-1.3), Standard data-use mode; one inference attempt, no automatic retries. Dollar cost is unknown: check Meta billing against your credit budget.</p>
+  <p data-analysis-status role="status" aria-live="polite" class="mt-4 rounded-lg border border-slate-700 p-3 text-sm leading-6 text-slate-200">{view.message}</p>
+  {!view.credentials_configured && <p class="mt-3 text-xs leading-5 text-amber-200">MODEL_API_KEY is not configured on this server. Set it before starting the app; never paste it into this page. Local preparation and offline report recovery remain available.</p>}
+  {prepared && <div class="mt-4 rounded-lg border border-slate-700 p-4 text-xs leading-6 text-slate-300">
+    <h4 class="font-medium text-slate-100">Prepared upload</h4>
+    <p>Source start {(prepared.source_start_ms / 1000).toFixed(3)} s · clip {(prepared.duration_ms / 1000).toFixed(3)} s</p>
+    <p>Video {prepared.video_bytes.toLocaleString('en-US')} bytes · telemetry {prepared.context_bytes.toLocaleString('en-US')} bytes</p>
+    <p>{prepared.events} aligned observations included of {prepared.total_events} raw events. Only this excerpt is analyzed; omitted events are described in its context.</p>
+    <p class="mt-2 break-all font-mono text-[11px]">{prepared.id}</p>
+  </div>}
+  {prepared && !view.reserved && <form data-upload class="mt-4">
+    <label class="flex items-start gap-3 text-xs leading-6 text-slate-300"><input data-consent type="checkbox" required class="mt-1.5 shrink-0" disabled={!canAnalyze} /><span>I consent to uploading this selected gameplay clip and correlated telemetry to Meta for a paid Muse Spark analysis. Telemetry may contain developer labels and observations. Expiry (1 hour) is requested and deletion is attempted, not guaranteed.</span></label>
+    <button data-analyze disabled={!canAnalyze} class="mt-4 rounded border border-teal-700 bg-teal-950/40 px-4 py-2 text-sm text-teal-200 hover:border-teal-300 disabled:opacity-50">Analyze session — upload to Meta</button>
+  </form>}
+  {view.reserved && <p class="mt-3 text-xs leading-5 text-amber-200">This preparation has already reserved an attempt. It cannot be submitted again, including after restart. A missing local response does not prove the remote operation failed.</p>}
+  {view.phase === 'report_available' && <button data-report class="mt-4 rounded border border-teal-700 px-4 py-2 text-sm text-teal-200">Build saved report offline — no upload</button>}
+  {view.cleanup && <p class="mt-3 text-xs leading-5 text-slate-400">Remote cleanup: {view.cleanup}. {view.cleanup !== 'deleted' && 'Deletion is not confirmed; inspect saved cleanup stages and use the cleanup-only CLI. Do not repeat inference.'}</p>}
+  <details class="mt-5 rounded-lg border border-slate-700 p-4" open={!prepared}>
+    <summary class="cursor-pointer text-sm text-slate-300">{prepared ? 'Prepare another explicit clip locally' : '1. Prepare a clip locally'}</summary>
+    <form data-prepare class="mt-4">
+      <fieldset disabled={view.active} class="flex flex-wrap gap-3">
+        <label class="text-xs text-slate-400">Source start (seconds)<input name="start" type="number" min="0" step="0.001" value="0" required class="mt-2 block w-32 rounded border border-slate-600 bg-slate-950 px-3 py-2 text-sm text-slate-100" /></label>
+        <label class="text-xs text-slate-400">Duration (seconds)<input name="duration" type="number" min="0.001" max={view.max_duration_ms / 1000} step="0.001" value={Math.min(duration ?? view.max_duration_ms, view.max_duration_ms) / 1000} required class="mt-2 block w-32 rounded border border-slate-600 bg-slate-950 px-3 py-2 text-sm text-slate-100" /></label>
+        {view.reserved && <label class="flex w-full items-start gap-3 text-xs leading-6 text-amber-200"><input name="reviewed" type="checkbox" required class="mt-1.5" /><span>I reviewed the previous attempt, including any unknown remote outcome. A new preparation could permit another paid request only after separate consent.</span></label>}
+        <button class="self-end rounded border border-slate-600 px-3 py-2 text-sm text-slate-200 hover:border-teal-300">Prepare locally — no upload</button>
+      </fieldset>
+    </form>
+    <p class="mt-3 text-xs leading-5 text-slate-400">Maximum {view.max_duration_ms / 1000} seconds per analysis (server configurable, hard cap 120). Select an in-range clip; no silent truncation or telemetry downsampling. Measured synchronization is required for analysis, not for video preview.</p>
+  </details>
+  <noscript><p class="mt-3 text-xs text-amber-200">JavaScript is required for these actions. Saved metadata/video remain available; use the documented CLI for analysis.</p></noscript>
+</section>
+<script>
+  for (const section of document.querySelectorAll<HTMLElement>('[data-analysis]')) {
+    const endpoint = section.dataset.endpoint!;
+    const status = section.querySelector<HTMLElement>('[data-analysis-status]')!;
+    let submitting = false, timer: ReturnType<typeof setTimeout> | undefined;
+    const locked = () => { for (const control of section.querySelectorAll<HTMLButtonElement | HTMLInputElement>('button,input')) control.disabled = true; };
+    const poll = async () => {
+      try {
+        const response = await fetch(endpoint); const view = await response.json();
+        if (response.ok && typeof view.message === 'string') {
+          status.textContent = view.message;
+          if (view.active || submitting) { timer = setTimeout(poll, 2000); return; }
+          window.location.reload();
+        } else { status.textContent = 'Status unavailable. Refresh and inspect saved stages before considering another submission.'; }
+      } catch { status.textContent = 'Connection lost. The server or remote operation may still be running. Refresh to inspect saved status; do not resubmit automatically.'; }
+    };
+    const post = async (body: object, initial: string) => {
+      if (submitting) return;
+      submitting = true; locked(); status.textContent = initial;
+      timer = setTimeout(poll, 1500);
+      try {
+        const response = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const data = await response.json();
+        if (!response.ok) throw new Error(typeof data.error?.message === 'string' ? data.error.message : 'Operation failed. Inspect saved stages; do not repeat automatically.');
+        window.location.reload();
+      } catch (error) {
+        status.textContent = error instanceof Error ? error.message : 'Connection lost; remote outcome may be unknown. Refresh before any retry.';
+        const refresh = document.createElement('a'); refresh.href = window.location.href; refresh.textContent = ' Refresh status (no retry)'; refresh.className = 'underline text-teal-300'; status.append(refresh);
+      } finally { submitting = false; clearTimeout(timer); }
+    };
+    section.querySelector<HTMLFormElement>('[data-prepare]')?.addEventListener('submit', event => {
+      event.preventDefault(); const form = event.currentTarget as HTMLFormElement;
+      const start = form.querySelector<HTMLInputElement>('[name=start]')!.valueAsNumber;
+      const duration = form.querySelector<HTMLInputElement>('[name=duration]')!.valueAsNumber;
+      void post({ action: 'prepare', start_ms: Math.round(start * 1000), duration_ms: Math.round(duration * 1000), reviewed_previous_attempt: form.querySelector<HTMLInputElement>('[name=reviewed]')?.checked === true }, 'Preparing selected clip locally. No upload yet…');
+    });
+    section.querySelector<HTMLFormElement>('[data-upload]')?.addEventListener('submit', event => {
+      event.preventDefault(); if (!section.querySelector<HTMLInputElement>('[data-consent]')!.checked) return;
+      void post({ action: 'analyze', preparation_id: section.dataset.preparation, upload_to_meta: true }, 'Validating prepared evidence before one remote submission…');
+    });
+    section.querySelector<HTMLButtonElement>('[data-report]')?.addEventListener('click', () => { void post({ action: 'report', preparation_id: section.dataset.preparation }, 'Building report from saved response locally. No upload…'); });
+    if (section.dataset.active === 'true') { locked(); void poll(); }
+    window.addEventListener('pagehide', () => clearTimeout(timer), { once: true });
+  }
+</script>

@@ -1,6 +1,8 @@
 ---
 import '../styles/global.css';
 import SessionPlayer from '../components/SessionPlayer.astro';
+import AnalysisControls from '../components/AnalysisControls.astro';
+import { analysisView, type AnalysisView } from '../server/dashboard-analysis.ts';
 import { playbackState, type PlaybackState } from '../server/playback.ts';
 import { localRequest, PRIVATE_HEADERS, parsePage, sessionPage, sessionSummary, validSessionId, withDashboardLibrary, type SessionSummary } from '../server/dashboard.ts';
 
@@ -8,6 +10,7 @@ for (const [name, value] of Object.entries(PRIVATE_HEADERS)) Astro.response.head
 let listing: Awaited<ReturnType<typeof sessionPage>> | null = null;
 let selected: SessionSummary | null = null;
 let playback: PlaybackState | null = null;
+let analysis: AnalysisView | null = null;
 let syncError: number | null = null;
 let problem: string | null = null;
 let page = 1;
@@ -26,6 +29,7 @@ if (!localRequest(Astro.request)) {
         if (id) {
           selected = listing.sessions.find(row => row.id === id) ?? await sessionSummary(library, id);
           playback = await playbackState(library, id, selected.preparation_id);
+          analysis = await analysisView(library, id, selected.preparation_id);
           try { syncError = (await library.manifest(id)).synchronization.estimated_error_ms; } catch { /* Unreadable metadata remains unknown. */ }
         }
       });
@@ -38,6 +42,7 @@ if (!localRequest(Astro.request)) {
 // Assignments happen in the callback above; use explicit typed views for the template.
 const data = listing as Awaited<ReturnType<typeof sessionPage>> | null;
 const player = playback as PlaybackState | null;
+const analysisControls = analysis as AnalysisView | null;
 const selection = selected as SessionSummary | null;
 const duration = (value: number | null) => value === null ? 'Not finalized' : `${(value / 1000).toFixed(1)} s`;
 const recordedDate = (value: string | null) => value ? `${value.slice(0, 10)} · ${value.slice(11, 16)} UTC` : 'Date unavailable';
@@ -83,10 +88,11 @@ const statusName = (status: string) => status[0]!.toUpperCase() + status.slice(1
             <dl class="mt-6 grid grid-cols-2 gap-x-5 gap-y-5 border-y border-slate-800 py-6 text-sm"><div><dt class="text-xs text-slate-500">SESSION DURATION</dt><dd class="mt-2 font-medium">{duration(selection.duration_ms)}</dd></div><div><dt class="text-xs text-slate-500">SYNCHRONIZATION</dt><dd class="mt-2 capitalize">{selection.synchronization ?? 'Unavailable'}</dd></div><div class="col-span-2"><dt class="text-xs text-slate-500">RECORDED</dt><dd class="mt-2">{recordedDate(selection.recorded_at)}</dd></div><div class="col-span-2"><dt class="text-xs text-slate-500">SCENE</dt><dd class="mt-2 break-all font-mono text-xs">{selection.scene ?? 'Unavailable'}</dd></div></dl>
             <p class="mt-5 break-all font-mono text-xs text-slate-400">{selection.id}</p>
             {player && <SessionPlayer id={selection.id} state={player} synchronization={selection.synchronization} estimated_error_ms={syncError} />}
+            {analysisControls && <AnalysisControls id={selection.id} view={analysisControls} duration_ms={selection.duration_ms} />}
             {selection.report && <div class="mt-5 rounded-lg border border-teal-900 bg-teal-950/30 p-4"><h3 class="text-sm font-medium text-teal-200">Saved report validated</h3><p class="mt-2 text-sm text-slate-300">{selection.report.findings} findings · {selection.report.quarantined} quarantined for review</p><p class="mt-2 break-all font-mono text-xs text-slate-400">{selection.report.status}</p><p class="mt-3 text-xs leading-5 text-slate-400">No supported findings is not proof of a bug-free game. Quarantined findings are not a clean result.</p></div>}
             <p class="mt-6 text-xs leading-5 text-slate-500">Status uses the most recently modified preparation. Unfinished stages can be interrupted; they are not proof that a job is running.</p>
           </> : <><h2 id="overview-heading" class="mt-4 text-xl font-semibold">Select a session</h2><p class="mt-3 text-sm leading-6 text-slate-400">Choose a recording from the library to inspect its metadata and saved report status.</p></>}
-          <div class="mt-7 border-t border-slate-800 pt-5"><p class="text-xs leading-5 text-slate-500">Browsing and playback stay local. Analysis controls and finding navigation are the next steps; CLI tools remain available.</p></div>
+          <div class="mt-7 border-t border-slate-800 pt-5"><p class="text-xs leading-5 text-slate-500">Browsing and playback stay local. Only explicit upload consent submits to Meta. Finding navigation is the next step; CLI tools remain available.</p></div>
         </aside>
       </div>}
       <footer class="mt-8 flex flex-wrap justify-between gap-3 text-xs leading-5 text-slate-500"><p>Local files. Explicit uploads. Evidence before conclusions.</p><p>No remote account required to browse.</p></footer>
