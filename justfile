@@ -82,6 +82,10 @@ session-report-read id preparation:
 report-test:
     node --test app/tests/findings-report.test.ts
 
+# Deterministic prepare→mock Muse→offline report checks; NOT a real API evaluation.
+pipeline-test:
+    node --test app/tests/preparation.test.ts app/tests/muse-api.test.ts app/tests/session-analysis.test.ts app/tests/findings-report.test.ts
+
 # Deterministic context/clip/provenance/conversion-failure checks; no API requests.
 preparation-test:
     node --test app/tests/preparation.test.ts

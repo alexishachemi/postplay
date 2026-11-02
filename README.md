@@ -64,6 +64,7 @@ Godot/Node/FFmpeg prerequisites.
 | `just session-report UUID PREPARATION_UUID` | Create/reuse an evidence-linked report from the saved response; no upload |
 | `just session-report-read UUID PREPARATION_UUID` | Revalidate and print an existing report offline |
 | `just report-test` | Report grounding, quarantine, corruption and offline-reopen fixtures |
+| `just pipeline-test` | Focused prepare → mocked API → offline report regression; no upload |
 | `just preparation-test` | Context/evidence/timing/media conversion and failure fixtures |
 | `just ai-contract-test` | Versioned AI prompts/results, evidence references, bounds and mocked API failures; no upload |
 | `just capture-test` | Godot runtime lifecycle, limits and forced-exit recovery; synthetic data only |
@@ -112,6 +113,11 @@ hypotheses to raw evidence, retain uncertainty and quarantine unsupported high
 certainty. Model prose/visual claims remain unverified, not demonstrated facts.
 Dashboard review remains M3 work; inspection/preparation/preview/report commands
 do not upload or imply a clean game.
+
+The [M2 real smoke audit](docs/m2-smoke-audit.md) records the verified capture →
+conversion → actual Muse → offline report chain and no-spend owner exit checks.
+Its empty result demonstrates the pipeline, not bug-detection performance; the
+M2 exit gate still requires owner approval before moving to M3.
 
 ## Initial application skeletons
 
