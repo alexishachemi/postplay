@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, symlinkSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, symlinkSync, renameSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -15,6 +15,7 @@ import { analyzeSession } from '../src/server/session-analysis.ts';
 import { createFindingsReport } from '../src/server/report-storage.ts';
 import { projectAsset } from '../src/server/project-assets.ts';
 import { GET as sessionsEndpoint } from '../src/pages/api/sessions/index.ts';
+import { createPlayback, playbackBytes, playbackState, videoResponse } from '../src/server/playback.ts';
 
 const root = mkdtempSync(join(tmpdir(), 'postplay-dashboard-'));
 const fixture = (name: string) => readFileSync(new URL(`../../contracts/fixtures/complete/${name}`, import.meta.url), 'utf8');
@@ -87,6 +88,85 @@ test('local origin policy rejects remote Host/origin before endpoint library acc
   assert.equal(response.status, 403);
 });
 
+test('local preview preserves source bytes, works with unknown sync, reopens and detects corruption', async () => {
+  const dir = mkdtempSync(join(root, 'preview-')); const f = capture(dir); const library = await SessionLibrary.create(dir);
+  f.manifest.synchronization = { status: 'unknown', estimated_error_ms: null, anchor: null, notes: [] };
+  writeFileSync(join(f.directory, 'session.json'), JSON.stringify(f.manifest));
+  const original = ['session.json', 'events.jsonl', 'recording.avi'].map(name => readFileSync(join(f.directory, name)));
+  try {
+    assert.match((await playbackState(library, f.id, null)).message, /Create a local/);
+    const metadata = await createPlayback(library, f.id);
+    assert.equal(metadata.source_start_ms, 0); assert.equal(metadata.duration_ms, 2000); assert.equal(metadata.kind, 'local preview');
+    assert.deepEqual((await playbackState(library, f.id, null)).video, metadata);
+    assert.deepEqual(await createPlayback(library, f.id), metadata, 'Reuse valid preview instead of reconverting');
+    ['session.json', 'events.jsonl', 'recording.avi'].forEach((name, i) => assert.deepEqual(readFileSync(join(f.directory, name)), original[i]));
+    const preview = new URL(metadata.url, 'http://localhost').searchParams.get('preview')!;
+    const loaded = await playbackBytes(library, f.id, 'preview', preview); assert.ok(loaded.video.length > 100);
+    writeFileSync(join(f.directory, 'playback', preview, 'clip.mp4'), 'corrupt');
+    await assert.rejects(playbackBytes(library, f.id, 'preview', preview));
+    assert.equal((await playbackState(library, f.id, null)).video, null);
+    const retry = await createPlayback(library, f.id); assert.notEqual(retry.url, metadata.url);
+    assert.equal(readdirSync(join(f.directory, 'playback')).length, 2, 'Preserve invalid attempt');
+    renameSync(join(f.directory, 'recording.avi'), join(f.directory, 'saved-original.avi'));
+    assert.match((await playbackState(library, f.id, null)).message, /missing|Restore/);
+    await assert.rejects(createPlayback(library, f.id), /missing/);
+  } finally { await library.close(); }
+});
+
+test('analysis excerpts retain actual source offsets and reject unsafe preview files', async () => {
+  const dir = mkdtempSync(join(root, 'excerpt-')); const f = capture(dir); const library = await SessionLibrary.create(dir);
+  try {
+    const prepared = await prepareSession(library, f.id, { start_ms: 500, duration_ms: 1000 });
+    const state = await playbackState(library, f.id, prepared.preparation_id);
+    assert.equal(state.video?.kind, 'analysis excerpt'); assert.equal(state.video?.source_start_ms, 500); assert.equal(state.video?.duration_ms, 1000);
+    await assert.rejects(playbackBytes(library, f.id, 'preview', '../../.env'));
+    const generated = await createPlayback(library, f.id); const preview = new URL(generated.url, 'http://localhost').searchParams.get('preview')!;
+    const clip = join(f.directory, 'playback', preview, 'clip.mp4'); renameSync(clip, clip + '.original'); symlinkSync(media, clip);
+    await assert.rejects(playbackBytes(library, f.id, 'preview', preview));
+    const previewParent = join(f.directory, 'playback'); renameSync(previewParent, previewParent + '.original'); symlinkSync(root, previewParent);
+    await assert.rejects(createPlayback(library, f.id), /Symlinks|safely/);
+  } finally { await library.close(); }
+});
+
+test('preview conversion tool failure is explicit and does not finalize a partial run', async () => {
+  const dir = mkdtempSync(join(root, 'tool-error-')); const f = capture(dir); const library = await SessionLibrary.create(dir);
+  // Keep FFprobe available but intentionally omit FFmpeg; no external request.
+  const bin = mkdtempSync(join(root, 'probe-only-'));
+  symlinkSync(execFileSync('sh', ['-c', 'command -v ffprobe'], { encoding: 'utf8' }).trim(), join(bin, 'ffprobe'));
+  const previous = process.env.PATH;
+  try {
+    process.env.PATH = bin;
+    await assert.rejects(createPlayback(library, f.id), /FFmpeg/);
+    const runs = readdirSync(join(f.directory, 'playback')); assert.equal(runs.length, 1);
+    assert.ok(!readdirSync(join(f.directory, 'playback', runs[0]!)).includes('preview.json'));
+  } finally { process.env.PATH = previous; await library.close(); }
+});
+
+test('preview attempt discovery/creation is bounded and never silently overwrites history', async () => {
+  const dir = mkdtempSync(join(root, 'preview-cap-')); const f = capture(dir); const library = await SessionLibrary.create(dir);
+  const parent = join(f.directory, 'playback'); mkdirSync(parent);
+  for (let i = 0; i < 100; i++) mkdirSync(join(parent, randomUUID()));
+  try {
+    await assert.rejects(createPlayback(library, f.id), /100 entries/);
+    assert.equal(readdirSync(parent).length, 100);
+  } finally { await library.close(); }
+});
+
+test('byte range responses support seeks, suffixes, HEAD and safe unsatisfiable requests', async () => {
+  const bytes = Uint8Array.from({ length: 100 }, (_, i) => i);
+  const response = (range?: string, method = 'GET', extra = {}) => videoResponse(bytes, new Request('http://localhost/video', { method, headers: { ...(range ? { range } : {}), ...extra } }));
+  const all = response(); assert.equal(all.status, 200); assert.equal(all.headers.get('content-type'), 'video/mp4'); assert.equal(all.headers.get('content-length'), '100');
+  const range = response('bytes=10-19'); assert.equal(range.status, 206); assert.equal(range.headers.get('content-range'), 'bytes 10-19/100'); assert.deepEqual(new Uint8Array(await range.arrayBuffer()), bytes.slice(10, 20));
+  assert.equal((await response('bytes=90-').arrayBuffer()).byteLength, 10);
+  assert.equal((await response('bytes=-5').arrayBuffer()).byteLength, 5);
+  assert.equal((await response('bytes=90-999').arrayBuffer()).byteLength, 10);
+  for (const bad of ['bytes=100-', 'bytes=10-9', 'bytes=-0', 'bytes=-', 'bytes=1-2,4-5', 'items=0-1', 'bytes=99999999999999999-']) {
+    const invalid = response(bad); assert.equal(invalid.status, 416); assert.equal(invalid.headers.get('content-range'), 'bytes */100');
+  }
+  const head = response(undefined, 'HEAD'); assert.equal((await head.arrayBuffer()).byteLength, 0); assert.equal(head.headers.get('content-length'), '100');
+  assert.equal(response('bytes=10-19', 'GET', { 'if-range': 'unknown-validator' }).status, 200);
+});
+
 // Test the actual bundled Node server: a source-only unit check cannot catch
 // resource URLs that change depth when Astro emits server/chunks modules.
 const app = new URL('../', import.meta.url).pathname;
@@ -123,6 +203,29 @@ test('production HTTP renders escaped/selectable sessions, metadata APIs and saf
     assert.equal((await fetch(base + '/api/sessions', { headers: { origin: 'https://attacker.invalid' } })).status, 403);
     assert.equal((await fetch(base + '/api/sessions', { headers: { origin: base } })).status, 200);
     assert.equal((await fetch(base + '/api/sessions', { method: 'POST' })).status, 404);
+    const endpoint = base + '/api/sessions/' + f.id;
+    assert.equal((await fetch(endpoint + '/preview', { method: 'POST' })).status, 403);
+    assert.equal((await fetch(endpoint + '/preview', { method: 'POST', headers: { origin: 'https://attacker.invalid' } })).status, 403);
+    assert.equal((await fetch(endpoint + '/preview', { method: 'POST', headers: { origin: base, 'content-type': 'text/plain', 'sec-fetch-site': 'same-origin' } })).status, 415);
+    const attempts = await Promise.all([1, 2].map(() => fetch(endpoint + '/preview', { method: 'POST', headers: { origin: base, 'content-type': 'application/json' } })));
+    assert.deepEqual(attempts.map(r => r.status).sort(), [200, 409], 'Duplicate clicks must not start parallel conversions');
+    const created = attempts.find(r => r.status === 200)!;
+    const result = await created.json(); assert.equal(result.remote_upload, false);
+    const selectedVideo = await fetch(base + '/?session=' + f.id); const videoHtml = await selectedVideo.text();
+    assert.match(videoHtml, /data-video/); assert.match(videoHtml, /Synchronization warning/); assert.match(videoHtml, /video-local seconds/);
+    const video = await fetch(base + result.video.url); assert.equal(video.status, 200); const bytes = new Uint8Array(await video.arrayBuffer());
+    const range = await fetch(base + result.video.url, { headers: { range: 'bytes=10-29' } }); assert.equal(range.status, 206);
+    assert.equal(range.headers.get('content-range'), `bytes 10-29/${bytes.length}`); assert.deepEqual(new Uint8Array(await range.arrayBuffer()), bytes.slice(10, 30));
+    assert.equal((await fetch(base + result.video.url, { method: 'HEAD' })).headers.get('content-length'), String(bytes.length));
+    assert.equal((await fetch(base + result.video.url, { headers: { range: 'bytes=99999999-' } })).status, 416);
+    assert.equal((await fetch(base + result.video.url, { headers: { origin: 'https://attacker.invalid' } })).status, 403);
+    assert.equal((await fetch(endpoint + '/video?preview=../../.env')).status, 400);
+    assert.equal((await fetch(base + result.video.url + '&preparation=' + randomUUID())).status, 400);
+    assert.equal((await fetch(endpoint + '/video?preview=' + randomUUID())).status, 404);
+    assert.equal((await fetch(base + '/api/sessions/' + randomUUID() + '/preview', { method: 'POST', headers: { origin: base, 'content-type': 'application/json' } })).status, 422);
+    renameSync(join(f.directory, 'recording.avi'), join(f.directory, 'original-preserved.avi'));
+    assert.equal((await fetch(base + result.video.url)).status, 404);
+    assert.match(await (await fetch(base + '/?session=' + f.id)).text(), /Restore missing original media/);
   });
   const empty = mkdtempSync(join(root, 'empty-'));
   await withServer(empty, async base => { const r = await fetch(base); assert.equal(r.status, 200); assert.match(await r.text(), /No sessions yet/); });

@@ -8,7 +8,7 @@ import { normalizeContext, PREPARATION_LIMITS, requirePreparation, PreparationEr
 export interface PreparationOptions { start_ms?: number; duration_ms?: number; video_bytes?: number; context_bytes?: number; events?: number }
 const sha = (value: string) => createHash('sha256').update(value).digest('hex');
 
-async function hashFile(file: FileHandle, maximum: number): Promise<string> {
+export async function hashFile(file: FileHandle, maximum: number): Promise<string> {
   const hash = createHash('sha256'), buffer = Buffer.alloc(65536);
   let position = 0;
   for (;;) {
@@ -34,7 +34,7 @@ async function createRun(directory: FileHandle): Promise<{ id: string; directory
     return { id, directory: await openPackageChild(parent, id, true) };
   } finally { await parent.close(); }
 }
-async function ffmpeg(file: FileHandle, args: string[], output?: FileHandle): Promise<string> {
+export async function ffmpeg(file: FileHandle, args: string[], output?: FileHandle): Promise<string> {
   // Reopen the pinned inode with an independent cursor (prior probes may seek).
   const input = await open(`/proc/self/fd/${file.fd}`, constants.O_RDONLY);
   try {
@@ -58,7 +58,7 @@ async function ffmpeg(file: FileHandle, args: string[], output?: FileHandle): Pr
 }
 /** showinfo is collected after source PTS rebasing/trim but before output rebasing.
  * Integer PTS + rational time_base avoid guessing from requested -ss or rounded text. */
-function timestamps(allLogs: string, filter = 0): number[] {
+export function timestamps(allLogs: string, filter = 0): number[] {
   const log = allLogs.split('\n').filter(line => line.includes(`[Parsed_showinfo_${filter} @`)).join('\n');
   const base = /config in time_base:\s*(\d+)\/(\d+)/.exec(log);
   requirePreparation(base && Number(base[1]) > 0 && Number(base[2]) > 0, 'timing_failed', 'Could not measure encoded frame timing.');
@@ -71,7 +71,7 @@ function timestamps(allLogs: string, filter = 0): number[] {
   requirePreparation(times.every((time, index) => Number.isFinite(time) && time >= 0 && (index === 0 || time > times[index - 1]!)), 'timing_failed', 'Decoded frame timestamps are not strictly ordered.');
   return times;
 }
-const inputArgs = (format: 'avi' | 'ogv' | 'mp4') => ['-v', 'info', '-xerror', '-copyts', '-protocol_whitelist', 'fd', '-format_whitelist', { avi: 'avi', ogv: 'ogg', mp4: 'mov' }[format],
+export const inputArgs = (format: 'avi' | 'ogv' | 'mp4') => ['-v', 'info', '-xerror', '-copyts', '-protocol_whitelist', 'fd', '-format_whitelist', { avi: 'avi', ogv: 'ogg', mp4: 'mov' }[format],
   '-f', { avi: 'avi', ogv: 'ogg', mp4: 'mov' }[format], '-fd', '0', '-i', 'fd:'];
 
 export async function prepareSession(library: SessionLibrary, id: string, options: PreparationOptions = {}) {

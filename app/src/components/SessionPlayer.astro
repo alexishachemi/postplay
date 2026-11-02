@@ -1,0 +1,56 @@
+---
+import type { PlaybackState } from '../server/playback.ts';
+interface Props { id: string; state: PlaybackState; synchronization: string | null; estimated_error_ms: number | null }
+const { id, state, synchronization, estimated_error_ms: error } = Astro.props;
+const video = state.video;
+const totalError = error === null || !video ? null : error + video.conversion_error_ms;
+const warning = synchronization !== 'verified' || totalError === null || totalError > 500;
+---
+<section data-player data-preview-url={`/api/sessions/${id}/preview`} aria-labelledby="player-heading" class="mt-6 border-t border-slate-800 pt-6">
+  <h3 id="player-heading" class="font-medium">Recorded video</h3>
+  {video ? <>
+    <video data-video controls playsinline preload="metadata" aria-label="Recorded gameplay" class="mt-4 aspect-video w-full rounded-lg bg-black" src={video.url}><p>Your browser cannot play this MP4. Try a browser with H.264 support.</p></video>
+    <p class="mt-3 text-xs leading-5 text-slate-400">{video.kind} · {(video.duration_ms / 1000).toFixed(3)} s · source video starts at {(video.source_start_ms / 1000).toFixed(3)} s. Player and seek times are video-local, not wall time. Audio is omitted.</p>
+    <form data-seek class="mt-4 flex flex-wrap items-end gap-3">
+      <label class="text-xs text-slate-300">Seek to video-local seconds<input data-seek-time type="number" min="0" max={(video.duration_ms - 1) / 1000} step="0.001" required value="0" class="mt-2 block w-36 rounded border border-slate-600 bg-slate-950 px-3 py-2 text-sm" /></label>
+      <button class="rounded border border-slate-600 px-3 py-2 text-sm hover:border-teal-300">Seek</button>
+    </form>
+    <p data-clock class="mt-3 text-xs tabular-nums text-slate-400" aria-live="off">Video-local 0.000 s · source {(video.source_start_ms / 1000).toFixed(3)} s</p>
+    <span data-source-start={video.source_start_ms} hidden></span>
+  </> : <><p class="mt-3 text-sm leading-6 text-slate-300">{state.message}</p><button data-preview class="mt-4 rounded border border-teal-700 px-4 py-2 text-sm text-teal-200 hover:border-teal-300 disabled:opacity-50">Create local preview</button><p class="mt-3 text-xs leading-5 text-slate-400">Local conversion only. No Meta upload or API key. Full previews support up to 120 seconds, 1 GiB source and 20 MiB MP4; no silent truncation.</p></>}
+  <p class:list={['mt-4 rounded-lg border p-3 text-xs leading-5', warning ? 'border-amber-800 bg-amber-950/30 text-amber-200' : 'border-slate-700 text-slate-400']} data-sync-warning={warning ? 'true' : 'false'}>
+    {warning ? 'Synchronization warning: ' : 'Synchronization: '}{synchronization ?? 'unavailable'}.
+    {totalError === null ? ' Telemetry alignment is unmeasured or unavailable; do not equate player time with telemetry clocks.' : ` Estimated alignment uncertainty including conversion: ${totalError} ms.`}
+    {' '}Visible-event measurements cover sampled intervals only, not proof of frame-perfect alignment throughout.
+  </p>
+  <p data-player-status role="status" class="mt-3 text-sm leading-6 text-slate-300"></p>
+</section>
+<script>
+  for (const section of document.querySelectorAll<HTMLElement>('[data-player]')) {
+    const status = section.querySelector<HTMLElement>('[data-player-status]')!;
+    const preview = section.querySelector<HTMLButtonElement>('[data-preview]');
+    preview?.addEventListener('click', async () => {
+      preview.disabled = true; status.textContent = 'Creating a local MP4 preview… No upload is taking place.';
+      try {
+        const response = await fetch(section.dataset.previewUrl!, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+        const data = await response.json();
+        if (!response.ok) throw new Error(typeof data.error === 'string' ? data.error : 'Local conversion failed.');
+        window.location.reload();
+      } catch (error) { status.textContent = error instanceof Error ? error.message : 'Local conversion failed. Check source files and FFmpeg, then retry.'; preview.disabled = false; }
+    });
+    const video = section.querySelector<HTMLVideoElement>('[data-video]');
+    if (!video) continue;
+    video.addEventListener('error', () => { status.textContent = 'Video unavailable or unsupported. Restore missing media, check FFmpeg/FFprobe, refresh, or try a browser with H.264 support.'; });
+    video.addEventListener('timeupdate', () => {
+      const source = Number(section.querySelector<HTMLElement>('[data-source-start]')!.dataset.sourceStart);
+      section.querySelector<HTMLElement>('[data-clock]')!.textContent = `Video-local ${video.currentTime.toFixed(3)} s · source ${(video.currentTime + source / 1000).toFixed(3)} s`;
+    });
+    section.querySelector<HTMLFormElement>('[data-seek]')!.addEventListener('submit', event => {
+      event.preventDefault();
+      const input = section.querySelector<HTMLInputElement>('[data-seek-time]')!;
+      const time = input.valueAsNumber;
+      if (!input.checkValidity() || !Number.isFinite(video.duration) || time >= video.duration) { status.textContent = 'Wait for video metadata, then choose a time within the video.'; return; }
+      video.currentTime = time; status.textContent = `Seek requested: video-local ${time.toFixed(3)} s.`;
+    });
+  }
+</script>
