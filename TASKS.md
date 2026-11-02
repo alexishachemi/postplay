@@ -38,15 +38,15 @@ Do not insert example results like these until they have actually occurred. The 
 
 **This is the first place Codex checks when asked to resume.** Maintain **one active task at a time**. Write the task ID and next action **before making substantive code changes**; update this short record at meaningful boundaries. The checklist below remains the source of **verified completion**, not this checkpoint.
 
-- **Task:** None — M2.6 verified; M2 exit gate awaits owner approval.
-- **Status:** Awaiting owner verification; M0/M1 approved, M2 not yet approved.
+- **Task:** M3.1 — Local Astro dashboard shell and session list.
+- **Status:** In progress; owner explicitly approved M2 exit on 2026-11-02.
 - **Last checkpoint:** 2026-11-02 — M2.6 actual saved chain revalidated via session-inspect/report-read with key unset. Original AVI and derived MP4 fully decoded/count-checked (180/96 frames); report hash unchanged. Disabled-fetch audit recorded zero network calls and unchanged hashes for all 12 analysis files. `just pipeline-test` passed 38 tests; `just check` passed 111 plus Godot smoke, zero type diagnostics and build; format/whitespace passed. No new paid call.
-- **Objective:** Reverify the actual capture→conversion→Muse→offline-report chain, preserve per-stage evidence and provide reproducible checks/owner gate steps. No new paid inference or fake findings.
+- **Objective:** Read-only loopback dashboard/API listing local sessions with identifying metadata, duration and honest recorded/processing/analyzed/failed states; selectable session overview and helpful empty/error states. No upload or analysis controls yet.
 - **Progress actually saved:** Focused just pipeline-test alias reuses existing preparation/adapter/submission/report integration tests; no duplicate runtime verifier or changes to data/prompt contracts. Real saved pipeline audited through production loader and complete video decode. `docs/m2-smoke-audit.md` records observed stages, results, exact no-spend commands and owner gate steps; README links it.
 - **Verification performed:** 38 pipeline tests and full 111-test/smoke/type/build regression passed on 2026-11-02. Real complete capture: 6,000 ms, 5 events, 960×540/30 fps, 5,978,934-byte AVI; real 3,200-ms H.264 clip: 96 frames. Existing report revalidated with empty supported findings and 39-ms uncertainty. All 12 stored analysis files unchanged; original/prepared hashes rechecked; no credential or network used by the audit. Failure-vs-empty behavior verified with mocks, not a new live error call.
 - **Files changed / artifacts to inspect:** M2.6 changes only `justfile`, `README.md`, `docs/m2-smoke-audit.md` and this record. Actual report: `artifacts/editor capture-mAGzwr/sessions/aa2e6b72-7387-4a75-88f8-c8789f9051dd/preparations/274c9745-c863-483c-89c5-90470b7feff8/analysis/findings.json` plus report-completed.json. SHA-256 b153c1e08e8cdf1242fa71c191c35007a3711dfc8c554178ad7a9716b6f35c41; 4,283 bytes. Source/prepared/analysis evidence untouched.
-- **Next exact action:** Owner reviews `docs/m2-smoke-audit.md` and explicitly confirms the M2 exit gate (real stored offline report and failed-vs-empty distinction). Record that approval before starting M3.1 dashboard shell/session list. No API call needed for approval.
-- **Blockers / owner action:** M2 owner exit verification pending; no setup/implementation blocker. Owner Nix derivation and dependencies unchanged.
+- **Next exact action:** Add bounded manifest/stage access using existing pinned session library, read-only Node-backed list/detail endpoints and server-rendered Astro/Tailwind shell. Paginate metadata requests, validate saved reports before analyzed status, label unfinalized markers as potentially interrupted rather than proven running, and escape all strings. Verify fixtures/HTTP/type/build and observed browser if a pinned local browser can be run. Preserve all captures/stages; no paid call.
+- **Blockers / owner action:** No setup/implementation blocker. No browser tool installed in the tool catalog; inspect available local browser binaries before deciding verification fallback.
 
 When in progress, replace the placeholders with concise facts. **Do not put speculative claims here.** Distinguish completed implementation, tests actually run, and pending tests. A checkpoint may lag behind abrupt changes: on resume inspect staged/unstaged/untracked files, relevant commits, and test artifacts, then reconcile and update this section before continuing. Check for an existing output before repeating paid Meta API operations.
 
@@ -58,14 +58,14 @@ Once the task is verified, preserve its implementation/verification notes under 
 | --- | --- | --- | --- |
 | **M0 — Prove dependencies** | Critical | Verified | M0.1–M0.6 verified; owner explicitly approved exit gate on 2026-10-28 |
 | **M1 — Capture a portable session** | Critical | Verified | M1.1–M1.7 verified; owner explicitly approved exit on 2026-10-30 |
-| **M2 — Analyze end-to-end** | Critical | Awaiting verification | M2.1–M2.6 verified, real stored Muse-backed report and smoke audit; owner exit gate pending |
-| **M3 — Review locally** | Critical | Not started | User can select a finding and inspect synchronized video + telemetry |
+| **M2 — Analyze end-to-end** | Critical | Verified | M2.1–M2.6 verified; owner explicitly approved exit on 2026-11-02 |
+| **M3 — Review locally** | Critical | In progress | M3.1 dashboard shell/session list underway; full finding/video journey pending |
 | **M4 — Controlled demo and evaluation** | Essential | Not started | Three buggy/clean pairs captured, analyzed, and honestly evaluated |
 | **M5 — Polish and submission** | Essential; packaging optional | Not started | Reproducible setup, credible demo, submission assets; packaging status documented |
 
 **Delivery strategy:** Build the smallest record → analyze → review vertical slice before elaborating the demo or dashboard. Start a **minimal test scene in M0** so video and the real model can be exercised immediately; expand it into the three-scenario game in M4. Do not wait until M4 to collect the first real clip. Reserve the final development margin for fixes and submission rather than optional features.
 
-**Next task (only if no active work):** Owner M2 exit approval, then `M3.1` local dashboard shell/session list. M0 and M1 are owner-approved; M2 is ready, not yet owner-approved.
+**Next task (only if no active work):** `M3.1` local dashboard shell/session list. M0, M1 and M2 are owner-approved.
 
 ## 3. M0 — Prove dependencies and integration feasibility
 
@@ -259,7 +259,8 @@ Once the task is verified, preserve its implementation/verification notes under 
 
 **M2 exit gate — owner verification**
 
-- [ ] Confirm one real API-backed report is stored and can be inspected offline, and a failed API call is visibly different from a valid `findings: []` outcome.
+- [x] Confirm one real API-backed report is stored and can be inspected offline, and a failed API call is visibly different from a valid `findings: []` outcome.
+  - **Owner approval (2026-11-02):** Owner explicitly confirmed satisfaction and requested marking the exit gate approved before the next task. M2.6 audit `aecdf2f`; actual saved response/report and failure-vs-empty verification documented above. Proceed to M3.1; no additional API call required.
 
 ## 6. M3 — Local dashboard and report review
 
