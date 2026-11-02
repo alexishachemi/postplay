@@ -6,6 +6,8 @@ dist/
 .env.*
 !.env.example
 sessions/
+!app/src/pages/api/sessions/
+!app/src/pages/api/sessions/**
 recordings/
 artifacts/
 *.avi

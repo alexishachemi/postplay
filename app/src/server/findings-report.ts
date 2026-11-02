@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import Ajv2020 from 'ajv/dist/2020.js';
+import { projectAsset } from './project-assets.ts';
 import { normalizeContext, type ClipTiming } from './preparation-context.ts';
 import { validateProposal, type Proposal } from './analysis-validation.ts';
 import { validateSessionPackage, type Event, type Session, type SafeValue } from './session-contract.ts';
@@ -14,10 +15,10 @@ export interface FindingsReport {
   coverage_summary: string; limitations: string[]; findings: Candidate[]; quarantined: Candidate[];
   evidence_snapshots: { event: Event; clip_ms: number }[]; registrations: Session['registrations'];
 }
-const schema = (name: string) => JSON.parse(readFileSync(new URL(`../../../contracts/${name}.v1.schema.json`, import.meta.url), 'utf8'));
+const schema = (name: string) => JSON.parse(readFileSync(projectAsset(`contracts/${name}.v1.schema.json`), 'utf8'));
 const ajv = new Ajv2020({ strict: true, allErrors: true });
 for (const name of ['safe-value', 'session', 'event']) ajv.addSchema(schema(name));
-for (const name of ['analysis-input', 'muse-result']) ajv.addSchema(JSON.parse(readFileSync(new URL(`../../../ai/schemas/${name}.v1.schema.json`, import.meta.url), 'utf8')), `https://postplay.local/contracts/${name}.v1`);
+for (const name of ['analysis-input', 'muse-result']) ajv.addSchema(JSON.parse(readFileSync(projectAsset(`ai/schemas/${name}.v1.schema.json`), 'utf8')), `https://postplay.local/contracts/${name}.v1`);
 const validator = ajv.compile<FindingsReport>(schema('findings'));
 export const REPORT_BYTES = 1024 * 1024;
 function requireReport(condition: unknown, message: string): asserts condition { if (!condition) throw new Error(message); }

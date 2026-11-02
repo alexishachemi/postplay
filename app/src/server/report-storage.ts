@@ -7,6 +7,7 @@ import { withPreparedSession, readPackageBytes } from './session-analysis.ts';
 import { groundProposal, validateFindingsReport, REPORT_BYTES, type FindingsReport } from './findings-report.ts';
 import { resultSchema, validateProposal } from './analysis-validation.ts';
 import { MODEL, makeRequest, record } from './muse-api.ts';
+import { projectAsset } from './project-assets.ts';
 
 export class ReportError extends Error {
   code: string;
@@ -61,8 +62,8 @@ async function reportSession(library: SessionLibrary, id: string, preparationId:
       requireReport(typeof started.started_at === 'string' && typeof done.completed_at === 'string' && (record(result.usage) || result.usage === null), 'Invalid saved analysis metadata');
       requireReport(typeof upload.id === 'string' && /^file[-_][a-zA-Z0-9_-]{1,200}$/.test(upload.id)
         && ['deleted', 'delete_failed', 'delete_unconfirmed'].includes(String(cleanup.status)) && cleanup.file_id === upload.id, 'Invalid upload cleanup provenance');
-      const system = await readFile(new URL('../../../ai/prompts/muse-analysis.v1.system.md', import.meta.url), 'utf8');
-      const template = await readFile(new URL('../../../ai/prompts/muse-analysis.v1.user.md', import.meta.url), 'utf8');
+      const system = await readFile(projectAsset('ai/prompts/muse-analysis.v1.system.md'), 'utf8');
+      const template = await readFile(projectAsset('ai/prompts/muse-analysis.v1.user.md'), 'utf8');
       requireReport(started.system_sha256 === hash(system) && started.user_template_sha256 === hash(template) && started.result_schema_sha256 === hash(JSON.stringify(resultSchema)), 'Unsupported or changed prompt/schema provenance');
       requireReport(isDeepStrictEqual(stage('request'), makeRequest(input.context, upload.id, system, template)), 'Saved request does not match the analyzed evidence/prompt');
       const grounded = groundProposal(proposal, source.inspection.session, source.inspection.events, { source_start_ms: input.manifest.source_start_ms, duration_ms: input.manifest.clip_duration_ms, conversion_error_ms: input.manifest.conversion_error_ms });

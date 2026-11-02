@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import Ajv2020 from 'ajv/dist/2020.js';
+import { projectAsset } from './project-assets.ts';
 
 export const CONTRACT_LIMITS = Object.freeze({ depth: 6, nodes: 256, payloadBytes: 8192, eventBytes: 16384, manifestBytes: 262144, events: 10000, logBytes: 16777216 });
 export type SafeValue = null | boolean | number | string | SafeValue[]
@@ -25,7 +26,7 @@ export interface Event {
   registration_id: string | null; source: Source; label: string; payload: SafeValue;
 }
 
-const schema = (name: string): object => JSON.parse(readFileSync(new URL(`../../../contracts/${name}.v1.schema.json`, import.meta.url), 'utf8'));
+const schema = (name: string): object => JSON.parse(readFileSync(projectAsset(`contracts/${name}.v1.schema.json`), 'utf8'));
 const ajv = new Ajv2020({ strict: true, allErrors: true });
 ajv.addSchema(schema('safe-value'));
 ajv.addSchema(schema('session'));

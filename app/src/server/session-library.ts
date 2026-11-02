@@ -154,6 +154,24 @@ export class SessionLibrary {
   }
   async close(): Promise<void> { await this.#root.close(); }
 
+  /** Read-only server callback for bounded stage discovery, never browser paths. */
+  async withDirectory<T>(id: unknown, use: (directory: FileHandle) => Promise<T>): Promise<T> {
+    if (typeof id !== 'string' || !UUID.test(id)) fail('invalid_id', 'Choose a canonical session UUID from the configured library; paths are not accepted.');
+    const directory = await openPackageChild(this.#root, id, true);
+    try { return await use(directory); } finally { await directory.close(); }
+  }
+
+  /** Bounded metadata is available even for incomplete/unfinalized captures. */
+  async manifest(id: string): Promise<Session> {
+    return await this.withDirectory(id, async directory => {
+      let session: Session;
+      try { session = validateSession(JSON.parse(await readText(directory, 'session.json', CONTRACT_LIMITS.manifestBytes))); }
+      catch (error) { if (error instanceof IngestionError) throw error; return fail('invalid_manifest', 'Session manifest violates the v1 contract. Preserve the original and inspect capture diagnostics.'); }
+      if (session.session_id !== id) fail('invalid_manifest', 'Manifest ID does not match its UUID directory.');
+      return session;
+    });
+  }
+
   /** Nonrecursive, bounded discovery. Non-UUID entries are counted, not interpreted. */
   async discover(): Promise<{ ids: string[]; ignored_entries: number }> {
     const directory = await opendir(`/proc/self/fd/${this.#root.fd}`);

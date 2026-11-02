@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import Ajv2020 from 'ajv/dist/2020.js';
+import { projectAsset } from './project-assets.ts';
 
 export interface Context {
   contract_version: string;
@@ -23,8 +24,8 @@ export interface Proposal {
   }[];
 }
 const ajv = new Ajv2020({ allErrors: true, strict: true });
-export const resultSchema: object = JSON.parse(readFileSync(new URL('../../../ai/schemas/muse-result.v1.schema.json', import.meta.url), 'utf8'));
-const inputSchema = JSON.parse(readFileSync(new URL('../../../ai/schemas/analysis-input.v1.schema.json', import.meta.url), 'utf8'));
+export const resultSchema: object = JSON.parse(readFileSync(projectAsset('ai/schemas/muse-result.v1.schema.json'), 'utf8'));
+const inputSchema = JSON.parse(readFileSync(projectAsset('ai/schemas/analysis-input.v1.schema.json'), 'utf8'));
 const inputValidator = ajv.compile<Context>(inputSchema);
 const resultValidator = ajv.compile<Proposal>(resultSchema);
 function requireCondition(value: unknown, message: string): asserts value {

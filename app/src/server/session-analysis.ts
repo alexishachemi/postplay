@@ -6,6 +6,7 @@ import { SessionLibrary, openPackageChild, probeVideo, type SessionSource } from
 import { normalizeContext, PREPARATION_LIMITS } from './preparation-context.ts';
 import { validateContext, resultSchema, type Context } from './analysis-validation.ts';
 import { analyzeMuse, API_LIMITS, MODEL, ModelError, record } from './muse-api.ts';
+import { projectAsset } from './project-assets.ts';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const hash = (value: Uint8Array | string) => createHash('sha256').update(value).digest('hex');
@@ -112,8 +113,8 @@ export async function analyzeSession(library: SessionLibrary, id: string, prepar
       if (options.upload_to_meta !== true) return { ...preview, status: 'preview', remote_upload: false };
       const key = options.apiKey ?? process.env.MODEL_API_KEY ?? '';
       if (!key || /[\r\n]/.test(key)) throw new ModelError('credentials_missing', 'A valid MODEL_API_KEY is required');
-      const system = await readFile(new URL('../../../ai/prompts/muse-analysis.v1.system.md', import.meta.url), 'utf8');
-      const userTemplate = await readFile(new URL('../../../ai/prompts/muse-analysis.v1.user.md', import.meta.url), 'utf8');
+      const system = await readFile(projectAsset('ai/prompts/muse-analysis.v1.system.md'), 'utf8');
+      const userTemplate = await readFile(projectAsset('ai/prompts/muse-analysis.v1.user.md'), 'utf8');
       try { await mkdir(`/proc/self/fd/${prepared.fd}/analysis`, { mode: 0o700 }); }
       catch (error) {
         if ((error as NodeJS.ErrnoException).code === 'EEXIST') throw new ModelError('already_started', 'Analysis already reserved for this preparation; inspect saved stages before considering another paid call');

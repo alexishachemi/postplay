@@ -1,5 +1,39 @@
 ---
 import '../styles/global.css';
+import { localRequest, PRIVATE_HEADERS, parsePage, sessionPage, sessionSummary, validSessionId, withDashboardLibrary, type SessionSummary } from '../server/dashboard.ts';
+
+for (const [name, value] of Object.entries(PRIVATE_HEADERS)) Astro.response.headers.set(name, value);
+let listing: Awaited<ReturnType<typeof sessionPage>> | null = null;
+let selected: SessionSummary | null = null;
+let problem: string | null = null;
+let page = 1;
+if (!localRequest(Astro.request)) {
+  Astro.response.status = 403;
+  problem = 'This workspace accepts local requests only.';
+} else {
+  try { page = parsePage(Astro.url.searchParams.get('page')); }
+  catch { Astro.response.status = 400; problem = 'Choose a positive page number from the session library.'; }
+  const id = Astro.url.searchParams.get('session');
+  if (id !== null && !validSessionId(id)) { Astro.response.status = 400; problem = 'Choose a session from the library. Filesystem paths are not accepted.'; }
+  if (!problem) {
+    try {
+      await withDashboardLibrary(async library => {
+        listing = await sessionPage(library, page);
+        if (id) selected = listing.sessions.find(row => row.id === id) ?? await sessionSummary(library, id);
+      });
+    } catch (error) {
+      Astro.response.status = error instanceof RangeError ? 400 : 503;
+      problem = 'The session library could not be opened, or this page is outside the library. Check POSTPLAY_SESSION_ROOT and return to the first page.';
+    }
+  }
+}
+// Assignments happen in the callback above; use explicit typed views for the template.
+const data = listing as Awaited<ReturnType<typeof sessionPage>> | null;
+const selection = selected as SessionSummary | null;
+const duration = (value: number | null) => value === null ? 'Not finalized' : `${(value / 1000).toFixed(1)} s`;
+const recordedDate = (value: string | null) => value ? `${value.slice(0, 10)} · ${value.slice(11, 16)} UTC` : 'Date unavailable';
+const badge: Record<SessionSummary['status'], string> = { recorded: 'border-slate-600 bg-slate-800 text-slate-200', processing: 'border-amber-800 bg-amber-950 text-amber-200', analyzed: 'border-teal-800 bg-teal-950 text-teal-200', failed: 'border-rose-800 bg-rose-950 text-rose-200' };
+const statusName = (status: string) => status[0]!.toUpperCase() + status.slice(1);
 ---
 
 <!doctype html>
@@ -8,18 +42,44 @@ import '../styles/global.css';
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="Local gameplay recording and evidence review." />
-    <title>PostPlay</title>
+    <title>Sessions · PostPlay</title>
   </head>
   <body class="min-h-screen bg-slate-950 text-slate-100">
-    <main class="mx-auto max-w-3xl px-6 py-20">
-      <p class="text-sm tracking-widest text-teal-300">POSTPLAY</p>
-      <h1 class="mt-4 text-4xl font-semibold">Review what happened.</h1>
-      <p class="mt-4 text-lg text-slate-300">Record gameplay, analyze a session, and inspect the evidence.</p>
-      <section class="mt-10 rounded-xl border border-slate-700 p-6" aria-labelledby="status">
-        <h2 id="status" class="text-xl font-medium">Session review is coming</h2>
-        <p class="mt-3 text-slate-300">This is the initial local application shell. Recording, session import, and analysis are still in development.</p>
-        <p class="mt-3 text-slate-300">No gameplay or telemetry has been uploaded.</p>
-      </section>
+    <a href="#sessions" class="sr-only focus:not-sr-only focus:p-4">Skip to sessions</a>
+    <header class="border-b border-slate-800 bg-slate-900/60">
+      <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-6 py-5">
+        <a href="/" class="flex items-center gap-3 font-semibold tracking-tight"><span class="rounded-md bg-teal-300 px-2.5 py-1 text-sm text-slate-950" aria-hidden="true">P</span>PostPlay</a>
+        <p class="text-xs tracking-wider text-slate-400">LOCAL WORKSPACE <span class="ml-3 text-teal-300">● Offline review</span></p>
+      </div>
+    </header>
+    <main class="mx-auto max-w-7xl px-6 py-10 md:py-14">
+      <div class="mb-9 flex flex-wrap items-end justify-between gap-5">
+        <div><p class="text-xs font-medium tracking-[0.2em] text-teal-300">RECORD → ANALYZE → INSPECT</p><h1 class="mt-3 text-3xl font-semibold tracking-tight md:text-4xl">Your playtest sessions</h1><p class="mt-3 max-w-2xl text-sm leading-6 text-slate-400">Open a local recording and check its saved analysis status. Your evidence stays on disk; browsing never uploads it.</p></div>
+        <a href={`/?page=${page}`} class="rounded-lg border border-slate-600 px-4 py-2 text-sm font-medium hover:border-teal-300 hover:text-teal-200 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal-300">Refresh library</a>
+      </div>
+      {problem ? <section role="alert" class="rounded-xl border border-rose-900 bg-rose-950/30 p-7"><h2 class="text-xl font-semibold">Session library unavailable</h2><p class="mt-3 max-w-2xl text-sm leading-6 text-slate-300">{problem}</p><a href="/" class="mt-5 inline-block text-sm text-teal-300 underline">Return to the library</a></section> : <div class="grid items-start gap-7 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+        <section id="sessions" aria-labelledby="sessions-heading" class="overflow-hidden rounded-xl border border-slate-800 bg-slate-900/40">
+          <div class="flex items-center justify-between border-b border-slate-800 px-5 py-4"><h2 id="sessions-heading" class="font-semibold">Session library</h2><span class="text-xs text-slate-400">{data?.total ?? 0} {data?.total === 1 ? 'session' : 'sessions'} · 10 per page</span></div>
+          {!data?.sessions.length ? <div class="p-8"><div class="mb-5 inline-flex rounded-xl border border-slate-700 p-3 text-teal-300" aria-hidden="true"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M12 10v7m-3-3 3 3 3-3"/></svg></div><h3 class="text-xl font-semibold">No sessions yet</h3><p class="mt-3 text-sm leading-6 text-slate-400">Record a session with the Godot addon, then set <code class="text-slate-200">POSTPLAY_SESSION_ROOT</code> to the folder containing your session UUID directories before starting this app.</p><p class="mt-4 text-sm leading-6 text-slate-400">The default is your XDG PostPlay session library. Refresh after recording; no account or model API key is needed.</p></div> : <ul class="divide-y divide-slate-800">
+            {data.sessions.map(row => <li><a href={`/?page=${page}&session=${row.id}`} aria-current={selection?.id === row.id ? 'true' : undefined} data-session-id={row.id} class:list={['block border-l-2 p-5 transition-colors hover:bg-slate-800/60 focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-teal-300', selection?.id === row.id ? 'border-teal-300 bg-slate-800/60' : 'border-transparent']}>
+              <div class="flex flex-wrap items-start justify-between gap-3"><h3 class="break-all font-medium text-slate-100">{row.name}</h3><span class:list={['rounded-full border px-2.5 py-0.5 text-xs font-medium', badge[row.status]]}>{statusName(row.status)}</span></div>
+              <p class="mt-2 text-xs text-slate-400">{recordedDate(row.recorded_at)} <span class="mx-2 text-slate-600">/</span> {duration(row.duration_ms)}</p><p class="mt-3 break-all font-mono text-[11px] text-slate-500">{row.id}</p>
+            </a></li>)}
+          </ul>}
+          {data && data.pages > 1 && <nav aria-label="Session pages" class="flex justify-between border-t border-slate-800 px-5 py-4 text-sm"><span>{page > 1 && <a class="text-teal-300 hover:underline" href={`/?page=${page - 1}`}>← Previous</a>}</span><span class="text-slate-400">Page {page} of {data.pages}</span><span>{page < data.pages && <a class="text-teal-300 hover:underline" href={`/?page=${page + 1}`}>Next →</a>}</span></nav>}
+        </section>
+        <aside aria-labelledby="overview-heading" class="rounded-xl border border-slate-800 bg-slate-900/40 p-6 md:p-7 lg:sticky lg:top-7">
+          <p class="text-xs tracking-widest text-slate-500">SESSION OVERVIEW</p>
+          {selection ? <><div class="mt-4 flex flex-wrap items-start justify-between gap-3"><h2 id="overview-heading" class="break-all text-2xl font-semibold">{selection.name}</h2><span class:list={['rounded-full border px-2.5 py-0.5 text-xs', badge[selection.status]]}>{statusName(selection.status)}</span></div><p class="mt-3 text-sm leading-6 text-slate-300">{selection.detail}</p>
+            <dl class="mt-6 grid grid-cols-2 gap-x-5 gap-y-5 border-y border-slate-800 py-6 text-sm"><div><dt class="text-xs text-slate-500">SESSION DURATION</dt><dd class="mt-2 font-medium">{duration(selection.duration_ms)}</dd></div><div><dt class="text-xs text-slate-500">SYNCHRONIZATION</dt><dd class="mt-2 capitalize">{selection.synchronization ?? 'Unavailable'}</dd></div><div class="col-span-2"><dt class="text-xs text-slate-500">RECORDED</dt><dd class="mt-2">{recordedDate(selection.recorded_at)}</dd></div><div class="col-span-2"><dt class="text-xs text-slate-500">SCENE</dt><dd class="mt-2 break-all font-mono text-xs">{selection.scene ?? 'Unavailable'}</dd></div></dl>
+            <p class="mt-5 break-all font-mono text-xs text-slate-400">{selection.id}</p>
+            {selection.report && <div class="mt-5 rounded-lg border border-teal-900 bg-teal-950/30 p-4"><h3 class="text-sm font-medium text-teal-200">Saved report validated</h3><p class="mt-2 text-sm text-slate-300">{selection.report.findings} findings · {selection.report.quarantined} quarantined for review</p><p class="mt-2 break-all font-mono text-xs text-slate-400">{selection.report.status}</p><p class="mt-3 text-xs leading-5 text-slate-400">No supported findings is not proof of a bug-free game. Quarantined findings are not a clean result.</p></div>}
+            <p class="mt-6 text-xs leading-5 text-slate-500">Status uses the most recently modified preparation. Unfinished stages can be interrupted; they are not proof that a job is running.</p>
+          </> : <><h2 id="overview-heading" class="mt-4 text-xl font-semibold">Select a session</h2><p class="mt-3 text-sm leading-6 text-slate-400">Choose a recording from the library to inspect its metadata and saved report status.</p></>}
+          <div class="mt-7 border-t border-slate-800 pt-5"><p class="text-xs leading-5 text-slate-500">This first dashboard view is read-only. Video playback, analysis controls and finding navigation are the next steps; CLI tools remain available.</p></div>
+        </aside>
+      </div>}
+      <footer class="mt-8 flex flex-wrap justify-between gap-3 text-xs leading-5 text-slate-500"><p>Local files. Explicit uploads. Evidence before conclusions.</p><p>No remote account required to browse.</p></footer>
     </main>
   </body>
 </html>

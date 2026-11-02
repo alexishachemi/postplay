@@ -86,6 +86,10 @@ report-test:
 pipeline-test:
     node --test app/tests/preparation.test.ts app/tests/muse-api.test.ts app/tests/session-analysis.test.ts app/tests/findings-report.test.ts
 
+# Session/status fixtures plus actual bundled HTTP UI/API checks; no uploads.
+dashboard-test:
+    node --test app/tests/dashboard.test.ts
+
 # Deterministic context/clip/provenance/conversion-failure checks; no API requests.
 preparation-test:
     node --test app/tests/preparation.test.ts

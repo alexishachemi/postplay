@@ -65,6 +65,7 @@ Godot/Node/FFmpeg prerequisites.
 | `just session-report-read UUID PREPARATION_UUID` | Revalidate and print an existing report offline |
 | `just report-test` | Report grounding, quarantine, corruption and offline-reopen fixtures |
 | `just pipeline-test` | Focused prepare → mocked API → offline report regression; no upload |
+| `just dashboard-test` | Session/status fixtures and actual built HTTP dashboard/API checks; no upload |
 | `just preparation-test` | Context/evidence/timing/media conversion and failure fixtures |
 | `just ai-contract-test` | Versioned AI prompts/results, evidence references, bounds and mocked API failures; no upload |
 | `just capture-test` | Godot runtime lifecycle, limits and forced-exit recovery; synthetic data only |
@@ -111,15 +112,17 @@ through the CLI, saving contract-valid proposals and truthful failure/cleanup
 states. [Versioned offline reports](docs/findings-reports.md) now link model
 hypotheses to raw evidence, retain uncertainty and quarantine unsupported high
 certainty. Model prose/visual claims remain unverified, not demonstrated facts.
-Dashboard review remains M3 work; inspection/preparation/preview/report commands
+The [local dashboard](docs/dashboard.md) now lists sessions and opens a read-only
+metadata/status overview. Video playback, analysis controls and finding navigation
+remain subsequent M3 tasks. Browsing, inspection/preparation/preview/report commands
 do not upload or imply a clean game.
 
 The [M2 real smoke audit](docs/m2-smoke-audit.md) records the verified capture →
 conversion → actual Muse → offline report chain and no-spend owner exit checks.
-Its empty result demonstrates the pipeline, not bug-detection performance; the
-M2 exit gate still requires owner approval before moving to M3.
+Its empty result demonstrates the pipeline, not bug-detection performance.
+The owner approved the M2 exit gate on 2026-11-02.
 
-## Initial application skeletons
+## Run the application and demo
 
 Inside `nix develop`, from the repository root:
 
@@ -131,8 +134,9 @@ npm --prefix app run dev
 godot --editor --path demo
 ```
 
-Open <http://127.0.0.1:4321>. The page describes the current implementation
-status; the session/analysis workflow is currently CLI-only. Astro 7 starts
+Open <http://127.0.0.1:4321> to browse the configured session library; set
+`POSTPLAY_SESSION_ROOT` before starting the app. Recording/analysis is still
+CLI/editor-driven; the first dashboard is read-only. Astro 7 starts
 its development server in the background; stop it from `app/` with
 `npx astro dev stop`. The production server starts after a build with
 `npm --prefix app start`, also bound to loopback by default.
