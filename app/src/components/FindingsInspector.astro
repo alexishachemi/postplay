@@ -20,12 +20,16 @@ const issueLabels: Record<string, string> = {
 ---
 <section data-findings data-video-url={inspection.status === 'ready' ? inspection.video_url : undefined} data-clip-duration={report?.timing.clip_duration_ms} aria-labelledby="findings-heading" class="mt-6 min-w-0 border-t border-slate-800 pt-6">
   <h3 id="findings-heading" class="font-medium">Findings and evidence</h3>
-  {!report ? <p data-report-error class="mt-3 text-sm leading-6 text-slate-300">{inspection.status !== 'ready' && inspection.message}</p> : <>
+  {!report ? <div data-report-error class="mt-3 text-sm leading-6 text-slate-300"><h4 class="font-medium">{inspection.status === 'invalid' ? 'Report unavailable or validation failed — not a clean result' : 'No saved report yet'}</h4><p>{inspection.status !== 'ready' && inspection.message}</p></div> : <>
+    <div data-report-outcome={report.status} class="mt-4 rounded-lg border border-slate-700 p-4 text-sm leading-6">
+      <h4 class="font-medium">{report.status === 'analyzed_no_findings' ? 'No supported findings' : report.status === 'needs_review' ? 'Review required — no accepted findings' : 'Supported hypotheses — human inspection required'}</h4>
+      <p>{report.status === 'analyzed_no_findings' ? 'This is a validated empty report, not proof that the game is bug-free. Review the analyzed clip, coverage and limitations below.' : report.status === 'needs_review' ? 'All candidates are quarantined. This is not a clean result or a confirmed defect.' : 'Evidence references passed local validation; the model’s interpretation is not a demonstrated fact.'}</p>
+      <p class="mt-2 text-xs text-slate-400">Saved report · {report.created_at}. Reopening reads local files only; it does not upload data or run inference.</p>
+    </div>
     <p class="mt-3 text-xs leading-6 text-slate-400">{report.findings.length} hypotheses · {report.quarantined.length} quarantined for review. Severity describes impact; certainty is the model's qualitative assessment, not a probability or proof.</p>
     <p class="mt-3 rounded-lg border border-amber-800 p-3 text-xs leading-5 text-amber-200">All finding prose, including observed/expected behavior and reproduction steps, is unverified model interpretation. Raw recorded values are shown separately. Quarantine is not a clean result; suspected softlocks are not proven unrecoverable.</p>
     <p class="mt-3 text-xs leading-5 text-slate-400">Finding/evidence times are local to this {seconds(report.timing.clip_duration_ms)} clip. Add source start {seconds(report.timing.source_start_ms)} for source-video time, never for seeking this clip. Alignment: {report.timing.synchronization.status}, uncertainty {report.timing.synchronization.estimated_error_ms === null ? 'unknown' : `${report.timing.synchronization.estimated_error_ms} ms`}.</p>
-    {!candidates.length && <p class="mt-4 text-sm text-teal-200">No supported findings in this saved report. This does not prove the game is bug-free.</p>}
-    <p data-finding-status role="status" class="mt-3 text-xs leading-5 text-slate-300">Open a finding to inspect its referenced events and seek the matching clip without autoplay.</p>
+    <p data-finding-status role="status" class="mt-3 text-xs leading-5 text-slate-300">{candidates.length ? 'Open a finding to inspect its referenced events and seek the matching clip without autoplay.' : 'No finding to select. The saved clip remains available for independent review.'}</p>
     <div class="mt-4 space-y-3">
       {candidates.map(({ candidate, quarantined }, index) => {
         const f = candidate.model_claim;
@@ -68,7 +72,7 @@ const issueLabels: Record<string, string> = {
       <h4 id="raw-evidence-heading" class="text-sm font-medium">Referenced raw telemetry — recorded values</h4>
       <p class="mt-2 text-xs leading-5 text-slate-400">Only report-referenced events are shown. Original wall/simulation/frame clocks remain distinct; clip time comes from the measured mapping. Payloads are typed JSON, not model descriptions.</p>
       <p data-raw-selection class="mt-2 text-xs text-slate-400"></p>
-      {!snapshots.length && <p class="mt-2 text-xs text-slate-400">No telemetry references in this report; video-only claims have no recorded event snapshots.</p>}
+      {!snapshots.length && <p class="mt-2 text-xs text-slate-400">{candidates.length ? 'No telemetry references in this report; video-only claims have no recorded event snapshots.' : 'No finding references to display. This does not mean the recording contains no telemetry.'}</p>}
       {snapshots.map((snapshot, index) => <details id={`recorded-event-${index}`} data-raw-event={index} tabindex="-1" class="mt-3 min-w-0 rounded-lg border border-slate-700 p-3 focus:outline-teal-300">
         <summary class="cursor-pointer break-words text-xs leading-6">{snapshot.event.id} · {snapshot.event.kind} · {snapshot.event.label}</summary>
         <div class="mt-3 break-words text-xs leading-6 text-slate-300">
@@ -79,7 +83,7 @@ const issueLabels: Record<string, string> = {
         </div>
       </details>)}
     </section>
-    <details class="mt-5 rounded-lg border border-slate-700 p-4 text-xs leading-6 text-slate-400"><summary class="cursor-pointer">Report coverage and limitations</summary><p class="mt-3 whitespace-pre-wrap">Model coverage summary (unverified): {report.coverage_summary}</p><ul class="mt-3 list-disc space-y-2 pl-5">{report.limitations.map(text => <li class="whitespace-pre-wrap">{text}</li>)}</ul></details>
+    <details data-report-coverage open={!report.findings.length} class="mt-5 rounded-lg border border-slate-700 p-4 text-xs leading-6 text-slate-400"><summary class="cursor-pointer">Report coverage and limitations</summary><p class="mt-3 whitespace-pre-wrap">Model coverage summary (unverified): {report.coverage_summary}</p>{report.limitations.length ? <ul class="mt-3 list-disc space-y-2 pl-5">{report.limitations.map(text => <li class="whitespace-pre-wrap">{text}</li>)}</ul> : <p>No additional model limitations supplied; limited clip coverage and unverified interpretation still apply.</p>}</details>
     <noscript><p class="mt-3 text-xs text-amber-200">Details and telemetry anchors work without JavaScript. Automatic seek/filtering requires JavaScript; use the displayed clip-local times with native video controls.</p></noscript>
   </>}
 </section>

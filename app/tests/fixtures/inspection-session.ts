@@ -3,13 +3,16 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
+import assert from 'node:assert/strict';
 import { SessionLibrary } from '../../src/server/session-library.ts';
 import { prepareSession } from '../../src/server/media-preparation.ts';
 import { analyzeSession } from '../../src/server/session-analysis.ts';
 import { createFindingsReport } from '../../src/server/report-storage.ts';
 import type { Proposal } from '../../src/server/analysis-validation.ts';
 
-export async function createInspectionFixture(root: string) {
+export const inspectionOutcomes = ['populated', 'empty', 'quarantined', 'failed', 'malformed'] as const;
+export type InspectionOutcome = typeof inspectionOutcomes[number];
+export async function createInspectionFixture(root: string, outcome: InspectionOutcome = 'populated') {
   const id = randomUUID(), directory = join(root, id); mkdirSync(directory);
   const read = (name: string) => readFileSync(new URL(`../../../contracts/fixtures/complete/${name}`, import.meta.url), 'utf8');
   const manifest = JSON.parse(read('session.json')); manifest.session_id = id; manifest.project.name = 'SYNTHETIC INSPECTION FIXTURE — not real inference';
@@ -33,15 +36,20 @@ export async function createInspectionFixture(root: string) {
   Object.assign(end, { id: 'fixture-end', title: 'Fixture end-boundary reference', category: 'other_technical', start_ms: 1200, end_ms: null, benign_alternatives: [], reproduction_steps: [], limitations: [] });
   end.evidence = [{ type: 'video', event_id: null, video_ms: 1200, observation: 'End boundary, not a decoded frame.' }];
   proposal.findings.push(high, end);
+  if (outcome === 'empty') proposal.findings = [];
+  if (outcome === 'quarantined') proposal.findings = [high];
   const library = await SessionLibrary.create(root);
   try {
     const preparation = await prepareSession(library, id, { start_ms: 500, duration_ms: 1200 });
-    await analyzeSession(library, id, preparation.preparation_id, { upload_to_meta: true, apiKey: 'synthetic-inspection-secret', fetcher: async (url, init) => {
+    const analysis = analyzeSession(library, id, preparation.preparation_id, { upload_to_meta: true, apiKey: 'synthetic-inspection-secret', fetcher: async (url, init) => {
       if (init?.method === 'DELETE') return Response.json({ deleted: true });
+      if (outcome === 'failed') return Response.json({ error: { code: 'bad_key' } }, { status: 401 });
       if (String(url).endsWith('/files')) return Response.json({ id: 'file-synthetic-ui' });
       return Response.json({ status: 'completed', model: 'muse-spark-1.3', output: [{ type: 'message', content: [{ type: 'output_text', text: JSON.stringify(proposal) }] }] });
     } });
-    const report = await createFindingsReport(library, id, preparation.preparation_id);
+    if (outcome === 'failed') await assert.rejects(analysis); else await analysis;
+    const report = outcome === 'failed' ? null : await createFindingsReport(library, id, preparation.preparation_id);
+    if (outcome === 'malformed') writeFileSync(join(directory, 'preparations', preparation.preparation_id, 'analysis', 'findings.json'), '{');
     return { id, directory, preparation_id: preparation.preparation_id, report };
   } finally { await library.close(); }
 }

@@ -91,8 +91,8 @@ dashboard-test:
     node --test app/tests/dashboard.test.ts app/tests/dashboard-analysis.test.ts app/tests/report-inspection.test.ts
 
 # Create a NEW uniquely suffixed local synthetic finding UI library. No API calls.
-inspection-fixture prefix='artifacts/inspection-fixture':
-    node app/scripts/inspection-fixture.ts "$1"
+inspection-fixture prefix='artifacts/inspection-fixture' outcome='populated':
+    node app/scripts/inspection-fixture.ts "$1" "$2"
 
 # Deterministic context/clip/provenance/conversion-failure checks; no API requests.
 preparation-test:

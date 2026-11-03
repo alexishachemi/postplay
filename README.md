@@ -119,8 +119,10 @@ timing. It can create a local-only browser preview, prepare an explicit analysis
 clip, and submit it after a separate Meta upload consent checkbox. Status/errors,
 one-attempt protection and offline report recovery are available. Findings now open
 with clip-local seeking, source context and exact supporting telemetry; hypotheses
-and quarantined claims remain clearly qualified. Broader outcome/offline and complete
-journey checks remain the next M3 tasks. Browsing, inspection/preparation/preview/report commands
+and quarantined claims remain clearly qualified. Empty reports expose coverage and
+limitations; review-only and validation-error outcomes stay distinct. Saved reports
+and clips reopen without credentials or external networking. The complete journey
+check remains the next M3 task. Browsing, inspection/preparation/preview/report commands
 do not upload or imply a clean game.
 
 The [M2 real smoke audit](docs/m2-smoke-audit.md) records the verified capture →

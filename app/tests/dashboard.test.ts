@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, symlinkSync, renameSync, readdirSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, symlinkSync, renameSync, readdirSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 import { execFileSync, spawn } from 'node:child_process';
 import { createServer } from 'node:net';
 import { once } from 'node:events';
@@ -16,7 +16,7 @@ import { createFindingsReport } from '../src/server/report-storage.ts';
 import { projectAsset } from '../src/server/project-assets.ts';
 import { GET as sessionsEndpoint } from '../src/pages/api/sessions/index.ts';
 import { createPlayback, playbackBytes, playbackState, videoResponse } from '../src/server/playback.ts';
-import { createInspectionFixture } from './fixtures/inspection-session.ts';
+import { createInspectionFixture, inspectionOutcomes } from './fixtures/inspection-session.ts';
 
 const root = mkdtempSync(join(tmpdir(), 'postplay-dashboard-'));
 const fixture = (name: string) => readFileSync(new URL(`../../contracts/fixtures/complete/${name}`, import.meta.url), 'utf8');
@@ -172,11 +172,11 @@ test('byte range responses support seeks, suffixes, HEAD and safe unsatisfiable 
 // resource URLs that change depth when Astro emits server/chunks modules.
 const app = new URL('../', import.meta.url).pathname;
 execFileSync('npm', ['run', 'build'], { cwd: app, stdio: 'pipe', timeout: 30000 });
-async function withServer(libraryRoot: string, use: (base: string) => Promise<void>, credential = 'fixture-sensitive-key') {
+async function withServer(libraryRoot: string, use: (base: string) => Promise<void>, credential = 'fixture-sensitive-key', denyOutbound = false) {
   const reservation = createServer(); reservation.listen(0, '127.0.0.1'); await once(reservation, 'listening');
   const address = reservation.address(); assert.ok(address && typeof address !== 'string'); const port = address.port;
   await new Promise<void>(resolve => reservation.close(() => resolve()));
-  const child = spawn(process.execPath, [join(app, 'dist/server/entry.mjs')], { cwd: tmpdir(), stdio: 'ignore', env: { ...process.env, HOST: '127.0.0.1', PORT: String(port), MODEL_API_KEY: credential, POSTPLAY_SESSION_ROOT: libraryRoot } });
+  const child = spawn(process.execPath, [...(denyOutbound ? ['--import', new URL('./fixtures/deny-outbound.mjs', import.meta.url).pathname] : []), join(app, 'dist/server/entry.mjs')], { cwd: tmpdir(), stdio: 'ignore', env: { ...process.env, HOST: '127.0.0.1', PORT: String(port), MODEL_API_KEY: credential, POSTPLAY_SESSION_ROOT: libraryRoot } });
   const base = `http://127.0.0.1:${port}`;
   try {
     let ready = false;
@@ -286,4 +286,44 @@ test('production findings render escaped hypotheses, source-qualified expectatio
     assert.match(invalid, /could not pass source\/evidence validation/); assert.ok(!invalid.includes('Fixture position hypothesis'));
     assert.equal(readFileSync(file, 'utf8'), '{}', 'Browsing must not repair or overwrite corrupt reports');
   }, '');
+});
+
+test('saved outcome matrix reopens across server restarts with outbound fetch/TCP denied and no credential', async () => {
+  const dir = mkdtempSync(join(root, 'offline-outcomes-'));
+  const fixtures = await Promise.all(inspectionOutcomes.map(async outcome => ({ outcome, ...await createInspectionFixture(dir, outcome) })));
+  const hashes = () => readdirSync(dir, { recursive: true }).map(String).sort().filter(name => statSync(join(dir, name)).isFile()).map(name => [name, createHash('sha256').update(readFileSync(join(dir, name))).digest('hex')]);
+  const before = hashes();
+  // Each server is a fresh process, not an in-memory report cache. The preload
+  // self-tests its outbound-denial hooks before the bundled server starts.
+  for (let restart = 0; restart < 2; restart++) await withServer(dir, async base => {
+    for (const f of fixtures) {
+      const response = await fetch(base + '/?session=' + f.id); assert.equal(response.status, 200);
+      const html = await response.text();
+      const outcome = html.match(/data-report-outcome="([^"]+)"/)?.[1];
+      if (f.outcome === 'populated') {
+        assert.equal(outcome, 'analyzed_with_findings'); assert.match(html, /2 hypotheses/);
+      } else if (f.outcome === 'empty') {
+        assert.equal(outcome, 'analyzed_no_findings'); assert.match(html, /No supported findings/);
+        assert.match(html, /not proof that the game is bug-free/); assert.match(html, /data-report-coverage open/);
+        assert.match(html, /Model coverage summary \(unverified\): SYNTHETIC/);
+        assert.match(html, /No finding to select/); assert.ok(!html.includes('Open a finding to inspect'));
+      } else if (f.outcome === 'quarantined') {
+        assert.equal(outcome, 'needs_review'); assert.match(html, /Review required — no accepted findings/);
+        assert.match(html, /All candidates are quarantined/); assert.match(html, /data-report-coverage open/);
+        assert.doesNotMatch(html, /<h4[^>]*>No supported findings/);
+      } else {
+        assert.equal(outcome, undefined); assert.match(html, /Report unavailable or validation failed — not a clean result/);
+        assert.ok(!html.includes('No supported findings') && !html.includes('data-finding-index='));
+        if (f.outcome === 'failed') {
+          assert.match(html, /Meta rejected the server credential/);
+          assert.equal((await (await fetch(`${base}/api/sessions/${f.id}/analysis`)).json()).phase, 'failed');
+        }
+      }
+      if (f.outcome === 'populated' || f.outcome === 'empty' || f.outcome === 'quarantined') {
+        const media = await fetch(`${base}/api/sessions/${f.id}/video?preparation=${f.preparation_id}`, { headers: { range: 'bytes=0-63' } });
+        assert.equal(media.status, 206); assert.equal((await media.arrayBuffer()).byteLength, 64);
+      }
+    }
+  }, '', true);
+  assert.deepEqual(hashes(), before, 'Browsing/restarts must not change source, preparation, analysis, or malformed files');
 });

@@ -68,3 +68,10 @@ test('fixture CLI creates a unique synthetic library even when its output parent
   assert.equal(readdirSync(join(result.session_root, result.session_id, 'preparations', result.preparation_id, 'analysis')).length, 12);
   assert.notEqual(result.session_root, root);
 });
+
+test('fixture CLI rejects unknown outcome names before creating output directories', () => {
+  const before = readdirSync(root);
+  const cli = new URL('../scripts/inspection-fixture.ts', import.meta.url).pathname;
+  assert.throws(() => execFileSync(process.execPath, [cli, join(root, 'must-not-exist', 'fixture'), 'not-an-outcome'], { stdio: 'pipe' }), /Unknown synthetic fixture outcome/);
+  assert.deepEqual(readdirSync(root), before);
+});

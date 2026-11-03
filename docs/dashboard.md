@@ -1,8 +1,9 @@
 # Local session dashboard
 
 The dashboard provides a session library, selectable metadata overview and local
-video playback, explicit analysis controls and finding/evidence inspection. Broader
-outcome/offline and complete journey checks remain later M3 tasks. The CLI remains
+video playback, explicit analysis controls and finding/evidence inspection, with
+distinct empty/review/error states and offline reopening. The complete journey
+check remains the next M3 task. The CLI remains
 available for preparation/submission/report steps. Loading or
 refreshing this page **never uploads to Meta or starts a conversion/analysis job**.
 
@@ -312,7 +313,7 @@ The Nix package/app remains deferred rather than claimed working.
 
 `just dashboard-test` exercises source/stage statuses, report corruption, partial
 captures, pagination/path/origin guards, then builds and starts the actual Node
-server on temporary loopback ports. Twenty-three dashboard/control/inspection tests cover metadata APIs, selection,
+server on temporary loopback ports. Twenty-five dashboard/control/inspection tests cover metadata APIs, selection,
 escaped script-like labels, helpful empty/error states, no leaked key/path,
 range/HEAD/416 handling, local conversion/reopen with unknown sync, excerpts with
 nonzero offsets, unsafe/corrupt/missing media, a missing-FFmpeg failure, duplicate
@@ -349,6 +350,66 @@ screenshots were inspected. The initial Enter-only CDP sequence did not activate
 the native summary; Space with a character event did. This is not a claim of
 exhaustive keyboard/browser compatibility. Browser inspection sent zero POSTs and
 made no paid request. Both genuine saved reports remain unchanged.
+
+### Saved outcomes and disconnected reopening
+
+The report heading distinguishes evidence-backed **hypotheses**, **No supported
+findings**, and **Review required — no accepted findings**. All-quarantined reports
+are not clean. Empty reports show model coverage and limitations expanded by
+default, plus the exact analyzed clip duration/source offset. An empty result says
+nothing definitive about the rest of a recording or game. Coverage prose is also
+unverified model output, not a claim that all frames/events were understood.
+
+**Report unavailable or validation failed — not a clean result** is separate from
+an empty valid report. Analysis controls retain the saved failure stage and safe
+error explanation; malformed/missing files are not silently repaired. A missing
+report alone does not establish why an attempt failed. Do not delete reservations
+or repeat paid inference to repair local report storage.
+
+To exercise the states without Meta, select any outcome below. Each command creates
+a separate uniquely suffixed library and prints its root and session UUID:
+
+```sh
+nix develop -c just inspection-fixture artifacts/ui-populated populated
+nix develop -c just inspection-fixture artifacts/ui-empty empty
+nix develop -c just inspection-fixture artifacts/ui-review quarantined
+nix develop -c just inspection-fixture artifacts/ui-failed failed
+nix develop -c just inspection-fixture artifacts/ui-malformed malformed
+```
+
+Set `POSTPLAY_SESSION_ROOT` to the printed root before starting `just app`. These
+are explicitly synthetic mocked responses and generated test video, not real
+analysis or evaluation results. The malformed mode intentionally corrupts only
+its new synthetic report. Unknown mode names fail before creating a library.
+
+For offline use, keep the original session package, prepared media, analysis stages
+and findings together. Start the app while setup dependencies are available, stop
+it, disconnect external networking, restart and reopen the same session URL. No
+key, Godot editor or model service is required to read saved results. The local
+Node server, FFprobe, original media and browser codec support are still required.
+Loopback must remain usable; browser developer-tools “Offline” can block even
+localhost and is not an appropriate whole-machine offline test for this local app.
+
+Deterministic HTTP verification starts the built server twice in fresh processes
+with no credential and a test-only preload denying all outbound Node fetch/TCP
+connections (the hooks self-test before server startup). Populated, empty,
+quarantine-only, failed and malformed reports remain distinct, saved video ranges
+work, and hashes of every source/preparation/stage/report remain unchanged. This
+isolates the app process; it does not disable the operating system's network or
+claim a live Meta outage was tested.
+
+Observed Chromium verification (2026-11-03) also reopened a synthetic empty report
+and the genuine saved Muse report, then restarted the server and reopened the real
+report again. Server fetch/TCP remained denied, no key was set, browser cache was
+disabled, and CDP failed all non-loopback page requests. An explicit external fetch
+probe failed on each page; local report rendering and video seek to 0.250 seconds
+still worked. Expanded coverage was visible, screenshots inspected, zero POSTs
+were sent, and all 12 stage/report files in each of the two genuine analyses kept
+their original hashes. No paid calls were made. Screenshots are local ignored
+artifacts under `artifacts/dashboard-check/outcome-{empty,real,real-restarted}.png`.
+The first disposable browser harness passed assertions but hung in cleanup while
+awaiting an already-signalled process; its process-state guard was corrected and
+the complete run repeated successfully with exit 0 and its children stopped.
 
 ### M3.3 real browser submission check (2026-11-02)
 
