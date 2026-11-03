@@ -5,7 +5,7 @@ import { isDeepStrictEqual } from 'node:util';
 import { SessionLibrary, openPackageChild, probeVideo, type SessionSource } from './session-library.ts';
 import { normalizeContext, PREPARATION_LIMITS } from './preparation-context.ts';
 import { validateContext, resultSchema, type Context } from './analysis-validation.ts';
-import { analyzeMuse, API_LIMITS, MODEL, ModelError, record } from './muse-api.ts';
+import { analyzeMuse, API_LIMITS, MODEL, ModelError, record, outputTokenLimit } from './muse-api.ts';
 import { projectAsset } from './project-assets.ts';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
@@ -55,7 +55,7 @@ async function save(directory: FileHandle, name: string, value: unknown, key: st
   const file = await open(`/proc/self/fd/${directory.fd}/${name}`, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW, 0o600);
   try { await file.writeFile(json); await file.sync(); } finally { await file.close(); }
 }
-export interface AnalysisOptions { upload_to_meta?: boolean; apiKey?: string; max_duration_ms?: number; fetcher?: typeof fetch }
+export interface AnalysisOptions { upload_to_meta?: boolean; apiKey?: string; max_duration_ms?: number; max_output_tokens?: number; fetcher?: typeof fetch }
 
 interface PreparedInput { manifest: Record<string, unknown> & { clip_duration_ms: number; source_start_ms: number; conversion_error_ms: number }; manifestBytes: Buffer; contextBytes: Buffer; context: Context; video: Buffer }
 /** Borrow pinned files and validated snapshots for this callback only; no upload. */
@@ -103,11 +103,12 @@ export async function withPreparedSession<T>(library: SessionLibrary, id: string
  * The loaded byte snapshots, not mutable filenames, are passed to the API. */
 export async function analyzeSession(library: SessionLibrary, id: string, preparationId: string, options: AnalysisOptions = {}) {
   const maximum = options.max_duration_ms ?? analysisDuration();
+  const outputTokens = outputTokenLimit(options.max_output_tokens);
   return await withPreparedSession(library, id, preparationId, maximum, async (_source, prepared, { manifest, manifestBytes, contextBytes, context, video }) => {
       const preview = { session_id: id, preparation_id: preparationId, model: MODEL, data_use_mode: 'Standard',
         video_bytes: video.length, context_bytes: contextBytes.length, events: context.events.length, duration_ms: manifest.clip_duration_ms,
         max_duration_ms: maximum, max_video_bytes: API_LIMITS.video_bytes, max_context_bytes: API_LIMITS.context_bytes,
-        max_output_tokens: API_LIMITS.max_output_tokens, automatic_retries: 0,
+        max_output_tokens: outputTokens, automatic_retries: 0,
         disclosure: 'Uploads selected video and telemetry to Meta. Explicit consent required. Dollar cost is unknown; check Meta billing.',
         relative_directory: `preparations/${preparationId}/analysis` };
       if (options.upload_to_meta !== true) return { ...preview, status: 'preview', remote_upload: false };
@@ -126,7 +127,7 @@ export async function analyzeSession(library: SessionLibrary, id: string, prepar
         await persist('started.json', { analysis_version: '1', status: 'started', started_at: new Date().toISOString(), ...preview,
           prompt_version: '1', schema_version: '1', system_sha256: hash(system), user_template_sha256: hash(userTemplate), result_schema_sha256: hash(JSON.stringify(resultSchema)),
           preparation_sha256: hash(manifestBytes), context_sha256: hash(contextBytes), clip_sha256: hash(video), remote_upload: true });
-        const result = await analyzeMuse({ apiKey: key, context, video, system, userTemplate, save: persist, fetcher: options.fetcher, max_duration_ms: maximum });
+        const result = await analyzeMuse({ apiKey: key, context, video, system, userTemplate, save: persist, fetcher: options.fetcher, max_duration_ms: maximum, max_output_tokens: outputTokens });
         await persist('completed.json', { analysis_version: '1', status: 'validated_proposal', completed_at: new Date().toISOString(), findings_count: result.findings.length,
           limitation: 'Not an evidence-reviewed findings.json report. Inspect api-result.json and cleanup.json.' });
         return { ...preview, status: 'validated_proposal', remote_upload: true, findings_count: result.findings.length };

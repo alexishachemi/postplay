@@ -6,7 +6,7 @@ import { SessionLibrary, openPackageChild, IngestionError } from './session-libr
 import { withPreparedSession, readPackageBytes } from './session-analysis.ts';
 import { groundProposal, validateFindingsReport, REPORT_BYTES, type FindingsReport } from './findings-report.ts';
 import { resultSchema, validateProposal } from './analysis-validation.ts';
-import { MODEL, makeRequest, record } from './muse-api.ts';
+import { MODEL, makeRequest, record, outputTokenLimit } from './muse-api.ts';
 import { projectAsset } from './project-assets.ts';
 
 export class ReportError extends Error {
@@ -65,7 +65,7 @@ async function reportSession(library: SessionLibrary, id: string, preparationId:
       const system = await readFile(projectAsset('ai/prompts/muse-analysis.v1.system.md'), 'utf8');
       const template = await readFile(projectAsset('ai/prompts/muse-analysis.v1.user.md'), 'utf8');
       requireReport(started.system_sha256 === hash(system) && started.user_template_sha256 === hash(template) && started.result_schema_sha256 === hash(JSON.stringify(resultSchema)), 'Unsupported or changed prompt/schema provenance');
-      requireReport(isDeepStrictEqual(stage('request'), makeRequest(input.context, upload.id, system, template)), 'Saved request does not match the analyzed evidence/prompt');
+      requireReport(isDeepStrictEqual(stage('request'), makeRequest(input.context, upload.id, system, template, outputTokenLimit(started.max_output_tokens))), 'Saved request does not match the analyzed evidence/prompt');
       const grounded = groundProposal(proposal, source.inspection.session, source.inspection.events, { source_start_ms: input.manifest.source_start_ms, duration_ms: input.manifest.clip_duration_ms, conversion_error_ms: input.manifest.conversion_error_ms });
       const makeReport = (createdAt: string): FindingsReport => validateFindingsReport({ schema_version: '1', policy_version: '1', session_id: id, preparation_id: preparationId, created_at: createdAt,
         status: grounded.findings.length ? 'analyzed_with_findings' : grounded.quarantined.length ? 'needs_review' : 'analyzed_no_findings',

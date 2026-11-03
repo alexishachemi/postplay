@@ -11,10 +11,15 @@ export class ModelError extends Error {
 export function record(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
-export function makeRequest(context: unknown, fileId: string, system: string, userTemplate: string) {
+/** Explicit server-side override only; default/browsing never increases spend. */
+export function outputTokenLimit(value: unknown = API_LIMITS.max_output_tokens): number {
+  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 512 || value > 8192) throw new ModelError('analysis_limit', 'Output token allowance must be 512–8192');
+  return value;
+}
+export function makeRequest(context: unknown, fileId: string, system: string, userTemplate: string, maxOutputTokens: number = API_LIMITS.max_output_tokens) {
   validateContext(context);
   return {
-    model: MODEL, store: false, max_output_tokens: API_LIMITS.max_output_tokens,
+    model: MODEL, store: false, max_output_tokens: outputTokenLimit(maxOutputTokens),
     input: [
       { role: 'system', content: [{ type: 'input_text', text: system }] },
       { role: 'user', content: [
@@ -83,11 +88,12 @@ export async function cleanupUpload(options: { apiKey: string; fileId: string; s
 /** One inference attempt. Persist stages before non-idempotent requests; never retry automatically. */
 export async function analyzeMuse(options: {
   apiKey: string; video: Uint8Array; context: unknown; system: string; userTemplate: string;
-  save: Save; fetcher?: typeof fetch; max_duration_ms?: number;
+  save: Save; fetcher?: typeof fetch; max_duration_ms?: number; max_output_tokens?: number;
 }) {
   const { apiKey, save } = options;
   if (!apiKey || /[\r\n]/.test(apiKey)) throw new ModelError('credentials_missing', 'A valid MODEL_API_KEY is required');
   const context = validateContext(options.context);
+  const maxOutputTokens = outputTokenLimit(options.max_output_tokens);
   const maximum = options.max_duration_ms ?? 30_000;
   if (!Number.isSafeInteger(maximum) || maximum <= 0 || maximum > PREPARATION_LIMITS.duration_ms || options.video.byteLength === 0 || options.video.byteLength > API_LIMITS.video_bytes || context.session.duration_ms > maximum || Buffer.byteLength(JSON.stringify(context)) > API_LIMITS.context_bytes) throw new ModelError('analysis_limit', 'Analysis media/context cap exceeded');
   if (!options.system.trim() || options.userTemplate.split('{{ANALYSIS_CONTEXT_JSON}}').length !== 2) throw new ModelError('invalid_prompt', 'Expected a system prompt and exactly one context placeholder');
@@ -106,7 +112,7 @@ export async function analyzeMuse(options: {
     if (typeof upload.id !== 'string' || !/^file[-_][a-zA-Z0-9_-]{1,200}$/.test(upload.id)) throw new ModelError('invalid_response', 'Invalid upload file ID');
     fileId = upload.id;
     await save('upload.json', { id: fileId, expires_at: upload.expires_at ?? null, bytes: upload.bytes ?? null });
-    const request = makeRequest(context, fileId, options.system, options.userTemplate);
+    const request = makeRequest(context, fileId, options.system, options.userTemplate, maxOutputTokens);
     await save('request.json', request);
     await save('inference-attempt.json', { started_at: new Date().toISOString(), model: MODEL, retries: 0 });
     const response = await call('/responses', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request) });

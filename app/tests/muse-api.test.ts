@@ -1,12 +1,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { analyzeMuse, cleanupUpload, API_LIMITS, ModelError } from '../src/server/muse-api.ts';
+import { analyzeMuse, cleanupUpload, API_LIMITS, ModelError, outputTokenLimit, makeRequest } from '../src/server/muse-api.ts';
 import { validateContext } from '../src/server/analysis-validation.ts';
 
 const fixture = (name: string): unknown => JSON.parse(readFileSync(new URL(`../../ai/examples/${name}.json`, import.meta.url), 'utf8'));
 const clean = fixture('muse-result.clean.example');
 const envelope = () => ({ id: 'resp-fixture', model: 'muse-spark-1.3', status: 'completed', usage: { input_tokens: 15, output_tokens: 8, total_tokens: 23 }, output: [{ type: 'message', content: [{ type: 'output_text', text: JSON.stringify(clean) }] }] });
+
+test('explicit output allowances are bounded, default stays4096, and invalid caps fail before upload', async () => {
+  const context = validateContext(fixture('analysis-input.example'));
+  assert.equal(outputTokenLimit(), 4096);
+  assert.equal(makeRequest(context, 'file-fixture', 'system', '{{ANALYSIS_CONTEXT_JSON}}', 8192).max_output_tokens, 8192);
+  for (const limit of [0, 511, 8193, Infinity, NaN, 4096.5, '8192']) assert.throws(() => outputTokenLimit(limit));
+  let calls = 0;
+  await assert.rejects(analyzeMuse({ ...options(async () => { calls++; return Response.json({}); }), max_output_tokens: 8193 }), /512–8192/);
+  assert.equal(calls, 0);
+});
 function options(fetcher: typeof fetch) {
   const saves = new Map<string, unknown>();
   return { apiKey: 'fixture-sensitive-key', video: new Uint8Array([1]), context: validateContext(fixture('analysis-input.example')), system: 'System fixture',

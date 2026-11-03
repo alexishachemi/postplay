@@ -32,7 +32,7 @@ const timing = { source_start_ms: 0, duration_ms: 2000, conversion_error_ms: 1 }
 const mediaRoot = mkdtempSync(join(tmpdir(), 'postplay-report-media-'));
 const media = join(mediaRoot, 'fixture.avi');
 execFileSync('ffmpeg', ['-v', 'error', '-n', '-f', 'lavfi', '-i', 'testsrc2=s=64x48:r=30', '-t', '2', '-c:v', 'mjpeg', media]);
-async function fixture(proposal: Proposal = clean(), failure = false) {
+async function fixture(proposal: Proposal = clean(), failure = false, outputTokens = 4096) {
   const root = mkdtempSync(join(tmpdir(), 'postplay-report-')); const directory = join(root, id); mkdirSync(directory);
   const manifest = JSON.parse(fixtureText('session.json')); manifest.capture.width = 64; manifest.capture.height = 48;
   manifest.registrations[0].expected_behavior = 'Fixture developer expectation, not proof of a defect';
@@ -45,11 +45,24 @@ async function fixture(proposal: Proposal = clean(), failure = false) {
     if (failure) return Response.json({ error: { code: 'bad_key' } }, { status: 401 });
     return Response.json({ id: 'resp-fixture', model: 'muse-spark-1.3', status: 'completed', usage: { input_tokens: 10, output_tokens: 3 }, output: [{ type: 'message', content: [{ type: 'output_text', text: JSON.stringify(proposal) }] }] });
   };
-  const analysis = analyzeSession(library, id, preparation.preparation_id, { upload_to_meta: true, apiKey: 'fixture-sensitive-key', fetcher });
+  const analysis = analyzeSession(library, id, preparation.preparation_id, { upload_to_meta: true, apiKey: 'fixture-sensitive-key', fetcher, max_output_tokens: outputTokens });
   if (failure) await assert.rejects(analysis); else await analysis;
   return { root, directory, library, preparation, run };
 }
 const json = (path: string): Record<string, unknown> => JSON.parse(readFileSync(path, 'utf8'));
+
+test('nondefault output allowance reopens offline while started/request caps must agree', async () => {
+  const f = await fixture(clean(), false, 8192);
+  try {
+    const report = await createFindingsReport(f.library, id, f.preparation.preparation_id);
+    assert.equal(json(join(f.run, 'request.json')).max_output_tokens, 8192);
+    assert.equal(json(join(f.run, 'started.json')).max_output_tokens, 8192);
+    assert.deepEqual(await loadFindingsReport(f.library, id, f.preparation.preparation_id), report);
+    const started = json(join(f.run, 'started.json')); started.max_output_tokens = 4096;
+    writeFileSync(join(f.run, 'started.json'), JSON.stringify(started));
+    await assert.rejects(loadFindingsReport(f.library, id, f.preparation.preparation_id));
+  } finally { await f.library.close(); }
+});
 
 test('grounding resolves original values and IDs without converting model descriptions into facts', () => {
   const { session, events } = raw(); const proposal = finding(); proposal.findings[0]!.evidence[0]!.observation = 'Invented x=999 in unverified prose';

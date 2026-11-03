@@ -100,7 +100,12 @@ and does not measure real model performance.
 The [M2.4 submission guide](../docs/session-analysis.md) documents the implemented
 server-only prepared-session adapter, preview/consent, one-attempt reservation,
 resource limits, proposal/usage stages and cleanup-only retry. Reports are built
-separately and offline; no M3 dashboard implementation is claimed.
+separately and offline; the [local dashboard](../docs/dashboard.md) exposes the
+same adapters after explicit upload consent. The default output allowance stays
+4096 tokens. A deliberate server-side override can select512–8192; the saved
+started/request stages record the actual cap and must agree on offline reopen.
+The M4 evaluation documents any separately planned replacement requests; no
+automatic retry or weaker schema/evidence policy is introduced.
 
 ## 6. SAM 3.1 optional follow-up
 
