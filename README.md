@@ -66,6 +66,7 @@ Godot/Node/FFmpeg prerequisites.
 | `just report-test` | Report grounding, quarantine, corruption and offline-reopen fixtures |
 | `just pipeline-test` | Focused prepare → mocked API → offline report regression; no upload |
 | `just dashboard-test` | Session/status fixtures and actual built HTTP dashboard/API checks; no upload |
+| `just inspection-fixture` | Create a unique, clearly synthetic findings UI library under `artifacts/`; no remote calls |
 | `just preparation-test` | Context/evidence/timing/media conversion and failure fixtures |
 | `just ai-contract-test` | Versioned AI prompts/results, evidence references, bounds and mocked API failures; no upload |
 | `just capture-test` | Godot runtime lifecycle, limits and forced-exit recovery; synthetic data only |
@@ -116,8 +117,10 @@ The [local dashboard](docs/dashboard.md) lists sessions, displays metadata/statu
 and plays local MP4s with native controls, numeric seeking and explicit clip/source
 timing. It can create a local-only browser preview, prepare an explicit analysis
 clip, and submit it after a separate Meta upload consent checkbox. Status/errors,
-one-attempt protection and offline report recovery are available; finding navigation
-remains the next M3 task. Browsing, inspection/preparation/preview/report commands
+one-attempt protection and offline report recovery are available. Findings now open
+with clip-local seeking, source context and exact supporting telemetry; hypotheses
+and quarantined claims remain clearly qualified. Broader outcome/offline and complete
+journey checks remain the next M3 tasks. Browsing, inspection/preparation/preview/report commands
 do not upload or imply a clean game.
 
 The [M2 real smoke audit](docs/m2-smoke-audit.md) records the verified capture →

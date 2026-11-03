@@ -1,8 +1,9 @@
 # Local session dashboard
 
 The dashboard provides a session library, selectable metadata overview and local
-video playback and explicit analysis controls. Finding/evidence navigation remains
-the next M3 task. The CLI remains available for preparation/submission/report steps. Loading or
+video playback, explicit analysis controls and finding/evidence inspection. Broader
+outcome/offline and complete journey checks remain later M3 tasks. The CLI remains
+available for preparation/submission/report steps. Loading or
 refreshing this page **never uploads to Meta or starts a conversion/analysis job**.
 
 ## Start from the checkout
@@ -133,8 +134,8 @@ With a session selected, scroll to **Analyze with Muse Spark**:
 4. Wait for saved-stage status. After schema/evidence validation and upload cleanup,
    the server builds the offline report automatically, then the page reloads. A
    successful empty report, quarantine/review outcome and a failure remain distinct.
-   A valid report is not proof that the game is bug-free. Finding details/navigation
-   are still the next task.
+   A valid report is not proof that the game is bug-free. Open a finding below the
+   player to inspect its evidence; see the next section.
 
 Analysis caps are server-configured with `POSTPLAY_ANALYSIS_MAX_DURATION_MS`
 (default 30,000, hard cap 120,000), video 20,000,000 bytes, context 96,000 bytes,
@@ -178,6 +179,92 @@ inherited `NODE_OPTIONS` without discarding existing options. This honors the
 server's standard proxy environment when needed for Meta. The key/proxy values are
 never sent to browser code. Loopback binding and Astro origin protections remain
 enabled; nothing should be exposed as a hosted service.
+
+## Finding and telemetry inspection
+
+The **Findings and evidence** section loads only an offline, fully revalidated
+report. Original session/telemetry/media, preparation, model stages and saved report
+must still agree. Missing, incomplete, unsafe or tampered evidence produces an
+explicit unavailable/validation message, never synthesized findings or a clean
+result. Loading this view makes no model request and writes no report/stage files.
+
+Open a finding's native disclosure using click or keyboard (Space was observed in
+Chromium). Its summary includes category, clip time/range, severity and model
+certainty **as text**. Low/medium hypotheses are not demonstrated facts. Quarantined
+claims remain visible but explicitly marked for human review, retaining their
+original certainty/severity. In particular, a high-certainty model statement is not
+promoted to a confirmed finding, and softlocks remain **suspected**.
+
+Expanded details separate model claims (observed/expected behavior, explanation,
+alternatives, proposed reproduction and limitations) from the original recorded
+values. Expected behavior is qualified as a developer-provided expectation,
+unverified observed precedent, or model inference. A referenced developer expectation
+is displayed verbatim from its original registration; it is not proof of a defect.
+Empty alternatives/steps/limitations are explicitly missing, not filled in.
+
+Opening a finding pauses and seeks the **matching prepared clip** to its clip-local
+start. The native player and numeric seek field update. Source-video time is
+displayed separately as `source_start_ms + clip_ms`; that offset must **not** be
+added when seeking the excerpt itself. An evidence video button seeks its own
+timestamp. A telemetry anchor opens/focuses the exact referenced recorded event and
+seeks its normalized clip time. The raw-event area filters/opens only the selected
+finding's referenced events; video-only claims explicitly have no telemetry snapshots.
+This is evidence navigation, not automatic verification of what a frame depicts.
+
+The player must have this report's generated session/preparation URL. If it differs,
+navigation refuses to guess another clip mapping. Before metadata arrives, only
+the latest requested seek is held pending. There is no autoplay. Out-of-range
+times are refused, not clamped; the v1 contract permits a reference at the exact
+end boundary, where no decoded frame exists, so the UI explicitly discloses a
+seek **1 ms earlier**. Browser/frame precision and synchronization uncertainty still
+apply; no frame-perfect claim.
+
+Referenced raw event JSON is rendered once per event, even across multiple claims.
+Its original event ID, source/label, typed payload, wall elapsed time, simulation
+time and process/physics frames are preserved. Clip/source video clocks are shown
+separately. Scroll the bounded JSON panel to inspect all fields; unsupported-value
+markers remain visible rather than being guessed into values. No arbitrary scene
+tree or entire raw log is exposed. Report coverage/limitations remain inspectable.
+
+All model/telemetry prose is escaped text. URLs/commands/HTML in it are not turned
+into links, scripts or actions. DOM IDs/selectors and telemetry anchors use generated
+numeric indices, not untrusted claim IDs. Video URLs are generated from validated
+UUIDs, never a path supplied by the model. The current server key is also checked
+against report content before this view renders. No public raw-stage or filesystem
+endpoint was added. Without JavaScript, native details and event anchors remain
+readable; automatic seek/filtering needs JavaScript, with displayed clip times as
+the manual fallback.
+
+### Try populated findings without paying for inference
+
+The saved real calibration reports currently contain no supported findings. To
+exercise populated/quarantined navigation without a new paid request:
+
+```sh
+nix develop
+just inspection-fixture
+# Read the generated session_root and session_id from its JSON output.
+export POSTPLAY_SESSION_ROOT='/absolute/generated/session_root'
+just app
+# Open http://127.0.0.1:4321 and select the SYNTHETIC INSPECTION FIXTURE session.
+```
+
+The recipe creates a **new uniquely suffixed** library under `artifacts/` by
+default; it does not overwrite a real recording or any earlier fixture. An optional
+argument changes the output prefix; missing parent directories are created. FFmpeg creates a tiny
+test pattern, and a mock fetcher creates explicitly synthetic proposal/report stages.
+**No Meta calls occur and no API key is needed.** These are UI fixtures, not real
+model responses, real bugs or empirical evaluation sessions. Do not click Prepare
+and Analyze on this fixture to claim model performance. It is permanently labeled
+synthetic in project metadata and model coverage text.
+
+Its 1.200-second clip starts at source 0.500 seconds. The first finding seeks clip
+0.300/source 0.800; its raw position event seeks clip 0.000/source 0.500 and records
+Vector2 x=160/y=330, independently of the intentionally wrong unverified model prose
+x=999. Video evidence seeks clip 0.600/source 1.100. A high-certainty low-severity
+suspected-softlock claim is quarantined and references an unsupported-value payload.
+The end-boundary example seeks 1.199 seconds with an explicit warning. Malicious-looking
+strings in IDs/titles are deliberate safe-rendering fixtures, never executable HTML.
 
 ## Local API
 
@@ -225,14 +312,17 @@ The Nix package/app remains deferred rather than claimed working.
 
 `just dashboard-test` exercises source/stage statuses, report corruption, partial
 captures, pagination/path/origin guards, then builds and starts the actual Node
-server on temporary loopback ports. Seventeen dashboard/control tests cover metadata APIs, selection,
+server on temporary loopback ports. Twenty-three dashboard/control/inspection tests cover metadata APIs, selection,
 escaped script-like labels, helpful empty/error states, no leaked key/path,
 range/HEAD/416 handling, local conversion/reopen with unknown sync, excerpts with
 nonzero offsets, unsafe/corrupt/missing media, a missing-FFmpeg failure, duplicate
 concurrent conversions (200/409), history limits, consent/body/origin/key guards,
 mock paid action/report creation, concurrent session protection, actual persisted
 progress, authentication/offline/invalid-output failures, interrupted reservations
-and offline report recovery. Provider error bodies/credentials are not exposed.
+and offline report recovery. Inspection tests cover raw snapshot/clock preservation,
+nonzero offsets/end boundaries, missing/corrupt/symlink reports, key-echo refusal,
+quarantine/independent severity-certainty and actual HTTP escaping of malicious claim
+IDs/prose. Provider error bodies/credentials are not exposed.
 The server is deliberately started from another CWD to cover bundled asset paths.
 `just check` includes these tests. No tests call Meta; fixtures are synthetic.
 
@@ -249,6 +339,16 @@ gesture was correctly blocked by Chromium; verification then used a real CDP
 keyboard Space interaction, without disabling autoplay/browser sandbox protections.
 These checks are development artifacts, not empirical model-detection or complete
 M3 journey evidence. The M3.2 checks made no paid call.
+
+M3.4 browser verification used the synthetic library without a key and observed
+Space selection seek 0.300 (not source 0.800), telemetry anchor 0.000, video evidence
+0.600, specific raw values/clocks, quarantine filtering, end 1.199, paused playback,
+wrong-video refusal and inert malicious strings. A 487px mobile overflow was found
+and fixed with a minimum-width constraint; 390px rerun passed. Desktop/mobile
+screenshots were inspected. The initial Enter-only CDP sequence did not activate
+the native summary; Space with a character event did. This is not a claim of
+exhaustive keyboard/browser compatibility. Browser inspection sent zero POSTs and
+made no paid request. Both genuine saved reports remain unchanged.
 
 ### M3.3 real browser submission check (2026-11-02)
 

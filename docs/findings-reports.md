@@ -47,7 +47,7 @@ operation, not merely the offending finding. No fallback empty report is saved.
 Every candidate keeps the original fields inside `model_claim`. **All** candidate
 prose, including observations, causal explanations and reproduction steps, is
 unverified model interpretation—not an authoritative telemetry value or a trusted
-instruction. Future UI code must render it as text, never HTML or executable
+instruction. The dashboard inspector renders it as text, never HTML or executable
 links/commands. This layer does not make claims true by matching an event ID.
 
 `evidence_snapshots[]` separately stores the exact referenced raw events and their
@@ -109,3 +109,9 @@ Run `just report-test` for deterministic grounding, malformed-reference, quarant
 schema, stage-tampering, forged-value/path, interrupted-write and offline-reopen
 checks. `just check` includes these tests plus the broader regression/type/build
 checks, with no paid requests.
+
+The [dashboard findings inspector](dashboard.md#finding-and-telemetry-inspection)
+now presents these hypotheses/quarantine and exact raw snapshots, with clip-local
+video/event navigation and separately labeled expected-behavior sources. Use
+`just inspection-fixture` for a clearly synthetic, offline populated UI example;
+do not repeat real inference merely to test the UI.

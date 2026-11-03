@@ -16,6 +16,7 @@ import { createFindingsReport } from '../src/server/report-storage.ts';
 import { projectAsset } from '../src/server/project-assets.ts';
 import { GET as sessionsEndpoint } from '../src/pages/api/sessions/index.ts';
 import { createPlayback, playbackBytes, playbackState, videoResponse } from '../src/server/playback.ts';
+import { createInspectionFixture } from './fixtures/inspection-session.ts';
 
 const root = mkdtempSync(join(tmpdir(), 'postplay-dashboard-'));
 const fixture = (name: string) => readFileSync(new URL(`../../contracts/fixtures/complete/${name}`, import.meta.url), 'utf8');
@@ -260,5 +261,29 @@ test('production analysis API requires exact consent, origin, bounded JSON and s
     const failed = await (await fetch(endpoint)).json(); assert.equal(failed.phase, 'failed'); assert.equal(failed.code, 'authentication_failed');
     const failureHtml = await (await fetch(base + '/?session=' + f.id)).text(); assert.match(failureHtml, /Meta rejected the server credential/); assert.match(failureHtml, /already reserved an attempt/);
     assert.ok(!failureHtml.includes('fixture-sensitive-key') && !failureHtml.includes('/private/provider/body'));
+  }, '');
+});
+
+test('production findings render escaped hypotheses, source-qualified expectations and exact raw snapshots', async () => {
+  const dir = mkdtempSync(join(root, 'findings-http-')), f = await createInspectionFixture(dir);
+  await withServer(dir, async base => {
+    const page = await fetch(base + '/?session=' + f.id); assert.equal(page.status, 200); const html = await page.text();
+    assert.match(html, /Findings and evidence/); assert.match(html, /2 hypotheses/); assert.match(html, /1 quarantined/);
+    assert.match(html, /Severity: high · Model certainty: medium/); assert.match(html, /Severity: low · Model certainty: high/);
+    assert.match(html, /Quarantined — human review required/); assert.match(html, /Suspected softlock/);
+    assert.match(html, /Model-inferred expectation/); assert.match(html, /Original developer expectation: Fixture expectation &lt;b&gt;/);
+    assert.ok(html.includes('&lt;img src=x onerror=')); assert.ok(!html.includes('<img src=x onerror='));
+    assert.ok(!html.includes('href="javascript:') && !html.includes('href="https://example.invalid'));
+    assert.ok(!html.includes('fixture-sensitive-key') && !html.includes(dir));
+    assert.match(html, /Original wall elapsed: 1000 ms · simulation: 500 ms · process frame: 15/);
+    assert.match(html, /&quot;x&quot;: 160/); assert.match(html, /UNVERIFIED MODEL CLAIM: x=999/);
+    assert.equal((html.match(/id="recorded-event-0"/g) ?? []).length, 1);
+    assert.match(html, /data-seek-ms="300"/); assert.match(html, /data-seek-ms="1199"/); assert.match(html, /End boundary: seek 1 ms earlier/);
+    assert.match(html, /source start 0.500 s/);
+    const file = join(f.directory, 'preparations', f.preparation_id, 'analysis', 'findings.json');
+    writeFileSync(file, '{}');
+    const invalid = await (await fetch(base + '/?session=' + f.id)).text();
+    assert.match(invalid, /could not pass source\/evidence validation/); assert.ok(!invalid.includes('Fixture position hypothesis'));
+    assert.equal(readFileSync(file, 'utf8'), '{}', 'Browsing must not repair or overwrite corrupt reports');
   }, '');
 });

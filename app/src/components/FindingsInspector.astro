@@ -1,0 +1,122 @@
+---
+import type { ReportInspection } from '../server/report-inspection.ts';
+import { evidenceSeekMs } from '../lib/evidence-time.ts';
+interface Props { inspection: ReportInspection }
+const { inspection } = Astro.props;
+const report = inspection.status === 'ready' ? inspection.report : null;
+const candidates = report ? [...report.findings.map(candidate => ({ candidate, quarantined: false })), ...report.quarantined.map(candidate => ({ candidate, quarantined: true }))] : [];
+const snapshots = report?.evidence_snapshots ?? [];
+const eventIndex = new Map(snapshots.map((snapshot, index) => [snapshot.event.id, index]));
+const seconds = (time: number) => `${(time / 1000).toFixed(3)} s`;
+const category = { ui_state_mismatch: 'UI/state mismatch', out_of_bounds: 'Out-of-bounds movement', softlock: 'Suspected softlock', other_technical: 'Other technical hypothesis' };
+const expectedSource = { developer_expectation: 'Developer-provided expectation (not a demonstrated fact)', observed_precedent: 'Model-reported observed precedent (unverified)', model_inference: 'Model-inferred expectation (not an established rule)' };
+const issueLabels: Record<string, string> = {
+  model_text_unverified: 'All model descriptions and explanations are unverified interpretations.', visual_claim_unverified: 'Visual claim is not automatically verified by a timestamp.',
+  coverage_incomplete: 'Analysis coverage is incomplete.', synchronization_uncertainty: 'Telemetry/video alignment has measured uncertainty.',
+  expected_behavior_inferred: 'Expected behavior is inferred, not a supplied rule.', observed_precedent_unverified: 'Claimed precedent is unverified.',
+  suspected_softlock_only: 'Suspected softlock only: no proof of an unrecoverable state.', high_certainty_requires_review: 'High model certainty requires human review; quarantined, not accepted as fact.',
+  unsupported_evidence_values: 'Referenced payload includes unsupported values; quarantined pending review.',
+};
+---
+<section data-findings data-video-url={inspection.status === 'ready' ? inspection.video_url : undefined} data-clip-duration={report?.timing.clip_duration_ms} aria-labelledby="findings-heading" class="mt-6 min-w-0 border-t border-slate-800 pt-6">
+  <h3 id="findings-heading" class="font-medium">Findings and evidence</h3>
+  {!report ? <p data-report-error class="mt-3 text-sm leading-6 text-slate-300">{inspection.status !== 'ready' && inspection.message}</p> : <>
+    <p class="mt-3 text-xs leading-6 text-slate-400">{report.findings.length} hypotheses · {report.quarantined.length} quarantined for review. Severity describes impact; certainty is the model's qualitative assessment, not a probability or proof.</p>
+    <p class="mt-3 rounded-lg border border-amber-800 p-3 text-xs leading-5 text-amber-200">All finding prose, including observed/expected behavior and reproduction steps, is unverified model interpretation. Raw recorded values are shown separately. Quarantine is not a clean result; suspected softlocks are not proven unrecoverable.</p>
+    <p class="mt-3 text-xs leading-5 text-slate-400">Finding/evidence times are local to this {seconds(report.timing.clip_duration_ms)} clip. Add source start {seconds(report.timing.source_start_ms)} for source-video time, never for seeking this clip. Alignment: {report.timing.synchronization.status}, uncertainty {report.timing.synchronization.estimated_error_ms === null ? 'unknown' : `${report.timing.synchronization.estimated_error_ms} ms`}.</p>
+    {!candidates.length && <p class="mt-4 text-sm text-teal-200">No supported findings in this saved report. This does not prove the game is bug-free.</p>}
+    <p data-finding-status role="status" class="mt-3 text-xs leading-5 text-slate-300">Open a finding to inspect its referenced events and seek the matching clip without autoplay.</p>
+    <div class="mt-4 space-y-3">
+      {candidates.map(({ candidate, quarantined }, index) => {
+        const f = candidate.model_claim;
+        const expectation = report.registrations.find(registration => registration.id === f.expected_source_ref);
+        const target = evidenceSeekMs(f.start_ms, report.timing.clip_duration_ms);
+        return <details data-finding data-finding-index={index} data-seek-ms={target} class:list={['min-w-0 rounded-lg border p-4', quarantined ? 'border-amber-800' : 'border-slate-700']}>
+          <summary class="cursor-pointer break-words text-sm leading-6 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal-300">
+            <span class="font-medium">{f.title}</span><span class="mt-2 block text-xs text-slate-400">{category[f.category]} · clip {seconds(f.start_ms)}{f.end_ms !== null && `–${seconds(f.end_ms)}`}</span>
+            <span class="mt-2 block text-xs text-slate-200">Severity: {f.severity} · Model certainty: {f.certainty} · {quarantined ? 'Quarantined — human review required' : 'Hypothesis — not demonstrated'}</span>
+          </summary>
+          <div class="mt-4 space-y-4 break-words text-xs leading-6 text-slate-300">
+            <p class="text-slate-400">Source-video start for this claim: {seconds(report.timing.source_start_ms + f.start_ms)}. Claim ID (text only): {f.id}</p>
+            {f.start_ms === report.timing.clip_duration_ms && <p class="text-amber-200">Reference is at the end boundary; seeking 1 ms earlier. There is no frame at duration itself.</p>}
+            <div><h4 class="font-medium text-slate-100">Observed behavior — model claim</h4><p class="whitespace-pre-wrap">{f.observed_behavior}</p></div>
+            <div><h4 class="font-medium text-slate-100">Expected behavior — model claim</h4><p class="whitespace-pre-wrap">{f.expected_behavior}</p><p class="mt-2 text-amber-200">Source: {expectedSource[f.expected_source]}</p>
+              {expectation && <div class="mt-2 rounded border border-slate-700 p-3"><p>Original registration {expectation.id} · {expectation.source.label}</p><p class="whitespace-pre-wrap">{expectation.description}</p><p class="mt-2 whitespace-pre-wrap">Original developer expectation: {expectation.expected_behavior}</p></div>}
+            </div>
+            <div><h4 class="font-medium text-slate-100">Explanation — unverified</h4><p class="whitespace-pre-wrap">{f.explanation}</p></div>
+            <div><h4 class="font-medium text-slate-100">Supporting evidence references</h4><ul class="mt-2 space-y-3">
+              {f.evidence.map(evidence => {
+                const i = evidence.event_id === null ? undefined : eventIndex.get(evidence.event_id);
+                const snapshot = i === undefined ? null : snapshots[i]!;
+                const time = snapshot?.clip_ms ?? evidence.video_ms!;
+                return <li class="rounded border border-slate-700 p-3">
+                  {snapshot ? <a data-evidence-event={i} data-seek-ms={evidenceSeekMs(time, report.timing.clip_duration_ms)} href={`#recorded-event-${i}`} class="text-teal-300 underline">Inspect raw event {snapshot.event.id} · clip {seconds(time)}</a> : <button data-video-evidence data-seek-ms={evidenceSeekMs(time, report.timing.clip_duration_ms)} class="text-teal-300 underline">Seek video evidence · clip {seconds(time)}</button>}
+                  <p class="mt-2 whitespace-pre-wrap">Model evidence description (unverified): {evidence.observation}</p>
+                  {time === report.timing.clip_duration_ms && <p class="text-amber-200">End boundary: seek 1 ms earlier.</p>}
+                </li>;
+              })}
+            </ul></div>
+            <div><h4 class="font-medium text-slate-100">Benign alternatives — model suggestions</h4>{f.benign_alternatives.length ? <ul class="mt-2 list-disc space-y-2 pl-5">{f.benign_alternatives.map(text => <li class="whitespace-pre-wrap">{text}</li>)}</ul> : <p>None supplied; this does not exclude benign explanations.</p>}</div>
+            <div><h4 class="font-medium text-slate-100">Proposed reproduction — not demonstrated instructions</h4>{f.reproduction_steps.length ? <ol class="mt-2 list-decimal space-y-2 pl-5">{f.reproduction_steps.map(text => <li class="whitespace-pre-wrap">{text}</li>)}</ol> : <p>No reproduction steps supplied.</p>}</div>
+            <div><h4 class="font-medium text-slate-100">Finding limitations — model supplied</h4>{f.limitations.length ? <ul class="mt-2 list-disc space-y-2 pl-5">{f.limitations.map(text => <li class="whitespace-pre-wrap">{text}</li>)}</ul> : <p>No additional limitations supplied; uncertainty still applies.</p>}</div>
+            <ul class="list-disc space-y-2 pl-5 text-amber-200">{candidate.issues.map(issue => <li>{issueLabels[issue] ?? issue}</li>)}</ul>
+          </div>
+        </details>;
+      })}
+    </div>
+    <section data-raw-evidence aria-labelledby="raw-evidence-heading" class="mt-6 min-w-0">
+      <h4 id="raw-evidence-heading" class="text-sm font-medium">Referenced raw telemetry — recorded values</h4>
+      <p class="mt-2 text-xs leading-5 text-slate-400">Only report-referenced events are shown. Original wall/simulation/frame clocks remain distinct; clip time comes from the measured mapping. Payloads are typed JSON, not model descriptions.</p>
+      <p data-raw-selection class="mt-2 text-xs text-slate-400"></p>
+      {!snapshots.length && <p class="mt-2 text-xs text-slate-400">No telemetry references in this report; video-only claims have no recorded event snapshots.</p>}
+      {snapshots.map((snapshot, index) => <details id={`recorded-event-${index}`} data-raw-event={index} tabindex="-1" class="mt-3 min-w-0 rounded-lg border border-slate-700 p-3 focus:outline-teal-300">
+        <summary class="cursor-pointer break-words text-xs leading-6">{snapshot.event.id} · {snapshot.event.kind} · {snapshot.event.label}</summary>
+        <div class="mt-3 break-words text-xs leading-6 text-slate-300">
+          <p>Clip {seconds(snapshot.clip_ms)} · source video {seconds(report.timing.source_start_ms + snapshot.clip_ms)}</p>
+          <p>Recorded source: {snapshot.event.source.label} · {snapshot.event.source.id} · node {snapshot.event.source.node_path ?? 'not supplied'}</p>
+          <p>Original wall elapsed: {snapshot.event.time.wall_elapsed_ms ?? 'unavailable'} ms · simulation: {snapshot.event.time.simulation_ms ?? 'unavailable'} ms · process frame: {snapshot.event.time.process_frame ?? 'unavailable'} · physics frame: {snapshot.event.time.physics_frame ?? 'unavailable'}</p>
+          <h5 class="mt-3 font-medium">Exact recorded event JSON</h5><pre class="mt-2 max-h-80 max-w-full overflow-auto rounded bg-slate-950 p-3 text-[11px] leading-5" tabindex="0">{JSON.stringify(snapshot.event, null, 2)}</pre>
+        </div>
+      </details>)}
+    </section>
+    <details class="mt-5 rounded-lg border border-slate-700 p-4 text-xs leading-6 text-slate-400"><summary class="cursor-pointer">Report coverage and limitations</summary><p class="mt-3 whitespace-pre-wrap">Model coverage summary (unverified): {report.coverage_summary}</p><ul class="mt-3 list-disc space-y-2 pl-5">{report.limitations.map(text => <li class="whitespace-pre-wrap">{text}</li>)}</ul></details>
+    <noscript><p class="mt-3 text-xs text-amber-200">Details and telemetry anchors work without JavaScript. Automatic seek/filtering requires JavaScript; use the displayed clip-local times with native video controls.</p></noscript>
+  </>}
+</section>
+<script>
+  for (const section of document.querySelectorAll<HTMLElement>('[data-findings][data-video-url]')) {
+    const status = section.querySelector<HTMLElement>('[data-finding-status]')!;
+    const video = document.querySelector<HTMLVideoElement>('[data-video]');
+    let pending: number | null = null;
+    const seek = (time: number) => {
+      if (!video || video.getAttribute('src') !== section.dataset.videoUrl) { status.textContent = 'The player does not match this report clip. Refresh the session to load its verified media; no offset is guessed.'; return; }
+      const duration = Number(section.dataset.clipDuration);
+      if (!Number.isFinite(time) || time < 0 || time >= duration) { status.textContent = 'Evidence timestamp cannot be sought safely.'; return; }
+      video.pause(); pending = time;
+      if (video.readyState < 1) { status.textContent = 'Waiting for video metadata before seeking this evidence…'; return; }
+      if (time / 1000 >= video.duration) { status.textContent = 'Browser media duration disagrees with this evidence time. Refresh/check the original recording.'; return; }
+      video.currentTime = time / 1000; pending = null;
+      const input = document.querySelector<HTMLInputElement>('[data-seek-time]'); if (input) input.value = String(time / 1000);
+      status.textContent = `Seek requested: clip-local ${(time / 1000).toFixed(3)} s. Playback is paused; inspect recorded values separately from the model claim.`;
+    };
+    video?.addEventListener('loadedmetadata', () => { if (pending !== null) seek(pending); });
+    video?.addEventListener('error', () => { pending = null; status.textContent = 'Evidence video unavailable. Restore missing media/check browser H.264 support; do not treat an unplayable claim as confirmed.'; });
+    for (const item of section.querySelectorAll<HTMLDetailsElement>('[data-finding]')) item.addEventListener('toggle', () => {
+      if (!item.open) return;
+      for (const other of section.querySelectorAll<HTMLDetailsElement>('[data-finding]')) if (other !== item) other.open = false;
+      const referenced = new Set([...item.querySelectorAll<HTMLElement>('[data-evidence-event]')].map(link => link.dataset.evidenceEvent));
+      for (const raw of section.querySelectorAll<HTMLDetailsElement>('[data-raw-event]')) { raw.hidden = !referenced.has(raw.dataset.rawEvent); raw.open = !raw.hidden; }
+      section.querySelector<HTMLElement>('[data-raw-selection]')!.textContent = `${referenced.size} specific recorded events referenced by the selected finding.`;
+      seek(Number(item.dataset.seekMs));
+    });
+    section.addEventListener('click', event => {
+      const target = event.target instanceof Element ? event.target.closest<HTMLElement>('[data-evidence-event],[data-video-evidence]') : null;
+      if (!target) return;
+      seek(Number(target.dataset.seekMs));
+      if (target.dataset.evidenceEvent !== undefined) {
+        const raw = section.querySelector<HTMLDetailsElement>(`[data-raw-event="${target.dataset.evidenceEvent}"]`);
+        if (raw) { raw.hidden = false; raw.open = true; raw.focus(); }
+      }
+    });
+  }
+</script>
