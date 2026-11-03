@@ -1,14 +1,14 @@
-extends SceneTree
+extends Node
 ## Deterministic behavior fixture, not a recording or evaluation session.
 
 
-func _initialize() -> void:
+func _ready() -> void:
 	call_deferred("run_test")
 
 
 func run_test() -> void:
 	var scene = preload("res://main.tscn").instantiate()
-	root.add_child(scene)
+	get_tree().root.add_child(scene)
 	scene.set_process(false)
 	var event := InputEventAction.new()
 	event.action = "ui_accept"
@@ -28,4 +28,4 @@ func run_test() -> void:
 	Input.action_release("ui_right")
 	scene.queue_free()
 	print("PASS: interaction, visible counter/flash, movement and boundary")
-	quit()
+	get_tree().quit()

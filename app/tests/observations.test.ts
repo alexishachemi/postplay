@@ -9,7 +9,7 @@ import { validateSessionPackage, type SafeValue } from '../src/server/session-co
 
 function run(mode: string) {
   const root = mkdtempSync(join(tmpdir(), 'postplay-observation-fixture-'));
-  const stdout = execFileSync('godot', ['--headless', '--path', fileURLToPath(new URL('../../demo', import.meta.url)), '--script', 'res://tests/observations_test.gd', '--', root, mode], { encoding: 'utf8', timeout: 20_000 });
+  const stdout = execFileSync('godot', ['--headless', '--path', fileURLToPath(new URL('../../demo', import.meta.url)), 'res://tests/observations_test.tscn', '--', root, mode], { encoding: 'utf8', timeout: 20_000 });
   const line = stdout.split('\n').find(line => line.startsWith('POSTPLAY_OBSERVATION_RESULT '));
   assert.ok(line, stdout);
   const directory = line.slice('POSTPLAY_OBSERVATION_RESULT '.length);

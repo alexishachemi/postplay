@@ -29,6 +29,18 @@ demo *args:
 editor:
     godot --editor --path demo
 
+# Play Relay Depot; optional developer-only environment selects one fault.
+depot *args:
+    godot --path demo res://playtest.tscn "$@"
+
+# Deterministic gameplay checks; no recordings/API calls.
+depot-test:
+    godot --headless --path demo --script res://tests/playtest_test.gd
+
+# Explicit GUI: six 30s real recordings, fixed replay inputs, no upload.
+evaluation-capture:
+    node app/scripts/capture-evaluation.ts
+
 # Legacy M0 smoke only; portable v1 capture uses the editor's Record Session button.
 record:
     #!/usr/bin/env bash
@@ -104,7 +116,7 @@ ai-contract-test:
 
 # Run the deterministic Godot smoke scene test; no recording or remote requests.
 smoke-test:
-    godot --headless --path demo --script res://tests/smoke_scene_test.gd
+    godot --headless --path demo res://tests/smoke_scene_test.tscn
 
 # Validate raw session/event contracts, including a real Godot serializer round trip.
 contract-test:

@@ -1,10 +1,10 @@
-extends SceneTree
+extends Node
 ## Synthetic observations of the real smoke scene. Not a recording/evaluation.
 
 const Collector = preload("res://addons/postplay/collector.gd")
 
 
-func _initialize() -> void:
+func _ready() -> void:
 	call_deferred("_run")
 
 
@@ -12,12 +12,11 @@ func _run() -> void:
 	var args := OS.get_cmdline_user_args()
 	var mode := args[1]
 	var scene = preload("res://main.tscn").instantiate()
-	root.add_child(scene)
-	current_scene = scene
+	get_tree().root.add_child(scene)
 	scene.set_process(false)
-	debug_collisions_hint = true
+	get_tree().debug_collisions_hint = true
 	var capture := Collector.new()
-	root.add_child(capture)
+	get_tree().root.add_child(capture)
 	assert(capture.set_input_actions([]) == ERR_UNCONFIGURED)
 	assert(capture.start_session(args[0], {"id": "fixture", "name": "Observation fixture", "scene": "main.tscn"}) == OK)
 	capture.set_process(false)
@@ -59,7 +58,7 @@ func _run() -> void:
 			scene.add_child(editor)
 			editor.text = "sensitive_fixture_text"
 			editor.grab_focus()
-			assert(root.gui_get_focus_owner() == editor)
+			assert(get_tree().root.gui_get_focus_owner() == editor)
 			Input.action_press("ui_right")
 			Input.action_press("ui_accept")
 			capture._process(1.0)
@@ -153,4 +152,4 @@ func _run() -> void:
 	print("POSTPLAY_OBSERVATION_RESULT " + capture.session_directory)
 	capture.free()
 	scene.free()
-	quit(0)
+	get_tree().quit(0)

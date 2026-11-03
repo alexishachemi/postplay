@@ -3,6 +3,10 @@
 For the current demo's complete supported workflow and owner verification steps,
 see [record → analyze → inspect](docs/dashboard-journey.md).
 
+The M4 [Relay Depot demo](docs/demo.md) provides the three controlled bug/clean
+pairs; [evaluation results and limitations](docs/evaluation.md) are kept separate
+from model inputs.
+
 Local, post-session AI playtesting for Godot: record gameplay and telemetry,
 analyze with Meta Muse Spark, and inspect the evidence in a local dashboard.
 Implementation is starting; see [TASKS.md](TASKS.md) for verified progress and
