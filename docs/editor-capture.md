@@ -3,7 +3,9 @@
 For a different game, first follow the [copy/enable installation guide](addon-integration.md).
 The instructions below start with the already-enabled repository demo.
 
-Use the pinned development shell so the editor inherits Godot, FFmpeg and FFprobe:
+For recording through dashboard review, follow the
+[complete M3 walkthrough](dashboard-journey.md). Use the pinned development shell
+so the editor inherits Godot, FFmpeg and FFprobe:
 
 ```sh
 nix develop -c just editor

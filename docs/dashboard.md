@@ -7,6 +7,9 @@ check remains the next M3 task. The CLI remains
 available for preparation/submission/report steps. Loading or
 refreshing this page **never uploads to Meta or starts a conversion/analysis job**.
 
+Follow the [complete M3 walkthrough](dashboard-journey.md) for recording, matching
+the two tools' library roots, measuring new captures, consent and owner review.
+
 ## Start from the checkout
 
 ```sh

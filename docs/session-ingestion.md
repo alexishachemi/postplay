@@ -1,9 +1,11 @@
 # Open and inspect saved sessions locally
 
 M2.1 provides a server-only **read-in-place** session library and a diagnostic CLI.
-There is no copying importer, media endpoint, dashboard UI or model submission
-yet. [Preparation](session-preparation.md) is a separate local command, not a side
-effect of inspection. Completed packages can be checked with no Godot editor running
+There is no copying importer: the [dashboard](dashboard.md) opens the same
+configured root in place, serves local video and offers separate consented analysis
+controls. [Preparation](session-preparation.md) is an explicit local operation,
+not a side effect of inspection. See the [complete walkthrough](dashboard-journey.md).
+Completed packages can be checked with no Godot editor running
 and no API key or network request.
 
 ## Choose the library

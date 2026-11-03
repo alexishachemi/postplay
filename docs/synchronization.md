@@ -3,7 +3,9 @@
 A finalized movie is **not** automatically synchronized. New captures retain
 `synchronization.status: "unknown"` until a visible event is measured in that
 particular recording. Never reuse an offset from another session, or equate wall
-time with fixed-fps Movie Maker time. No dashboard seeking is implemented yet.
+time with fixed-fps Movie Maker time. The [dashboard](dashboard.md) can preview and
+seek video, but measurement still uses the explicit command below. See the
+[complete walkthrough](dashboard-journey.md) for the order of operations.
 
 ## Measure your own recording
 

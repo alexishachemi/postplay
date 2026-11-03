@@ -1,5 +1,8 @@
 # PostPlay
 
+For the current demo's complete supported workflow and owner verification steps,
+see [record → analyze → inspect](docs/dashboard-journey.md).
+
 Local, post-session AI playtesting for Godot: record gameplay and telemetry,
 analyze with Meta Muse Spark, and inspect the evidence in a local dashboard.
 Implementation is starting; see [TASKS.md](TASKS.md) for verified progress and
