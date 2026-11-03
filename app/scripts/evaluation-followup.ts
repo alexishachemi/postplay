@@ -12,15 +12,17 @@ if (!process.env.MODEL_API_KEY) throw new Error('MODEL_API_KEY required server-s
 const root = resolve(process.argv[2]!), id = process.argv[3]!;
 const source = JSON.parse(readFileSync(join(root, 'prepared.json'), 'utf8')).find((r: { session_id: string }) => r.session_id === id);
 assert.ok(source, 'Session must be in the prepared index');
-const file = join(root, 'followups.json');
-const entries: { session_id: string; preparation_id: string; replaces: string | null; status?: string; usage?: unknown }[] = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : [];
+// Separate sessions must not race over a shared rolling index. Read the earlier
+// index for recovery, but all new checkpoints are session-specific.
+const file = join(root, `followups-${id}.json`), legacy = join(root, 'followups.json');
+const entries: { session_id: string; preparation_id: string; replaces: string | null; status?: string; usage?: unknown }[] = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : existsSync(legacy) ? JSON.parse(readFileSync(legacy, 'utf8')).filter((r: { session_id: string }) => r.session_id === id) : [];
 const library = await SessionLibrary.create(join(root, 'sessions'));
 try {
   let entry = entries.find(r => r.session_id === id);
   if (!entry) {
     const original = join(root, 'sessions', id, 'preparations', source.preparation_id, 'analysis');
     let preparationId: string = source.preparation_id;
-    if (existsSync(original)) {
+    if (existsSync(original) && !existsSync(join(original, 'report-completed.json'))) {
       const failure = JSON.parse(readFileSync(join(original, 'failure.json'), 'utf8'));
       assert.equal(failure.code, 'model_incomplete', 'Only the inspected incomplete attempt may get a deliberate new preparation here');
       const response = JSON.parse(readFileSync(join(original, 'response.json'), 'utf8'));

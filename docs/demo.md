@@ -56,6 +56,12 @@ input schedules, identical within each buggy/clean pair, not human play or
 autonomous exploration. The editor restores its prior Movie Maker toggle after
 each capture. The separate `evaluation.json` records ground truth outside
 `sessions/`; only neutral UUID session packages go to the ordinary pipeline.
+The disposable editor uses X11, software OpenGL and disabled game embedding after
+hardware-rendered follow-up captures stalled on this host (Wayland and X11).
+This is a tested recording-runner setting, not a proven driver root cause.
+An X11/XWayland DISPLAY and Mesa software renderer are required
+for this runner; the owner editor and addon settings are not changed. Deadline
+failure stops the runner and retains the partial capture, never counts it as coverage.
 
 The command prints a new evaluation root. Preparation uses scene-specific pixel
 measurement of three magenta stripe onsets in each actual video, not a guessed
@@ -88,3 +94,29 @@ To inspect results, set `POSTPLAY_SESSION_ROOT=/absolute/evaluation-root/session
 before starting the dashboard and select the session UUID. Ground truth and
 evaluation commentary are never submitted to Muse. The empirical results belong
 in [the evaluation record](evaluation.md), including misses and false positives.
+
+### Deliberate follow-ups, not automatic retries
+
+The first M4 batch exposed an incomplete response and an invalid high-certainty
+inferred-boundary claim. Original failures are retained in the evaluation table.
+For a separately planned incomplete-response replacement or a fresh prepared
+session only:
+
+```sh
+node --use-env-proxy app/scripts/evaluation-followup.ts ROOT SESSION_UUID --upload-to-meta
+```
+
+This checkpoints a new preparation before replacing an inspected
+`model_incomplete/max_output_tokens` attempt; it never reuses that reservation.
+For fresh sessions it uses the existing unreserved preparation. Output allowance
+is explicitly8192, bounded by the server512–8192 guard; ordinary dashboard/API
+default remains4096. Existing reservations are read/recovered offline, never
+automatically retried. Report revalidation checks the saved request cap against
+the saved started stage, preserving old4096 reports. Prompts, output schemas and
+evidence/certainty validators are unchanged.
+
+`node app/scripts/capture-evaluation.ts --boundary-pair` captures just a new
+clean/fault boundary pair using current common instrumentation. The revised game
+adds a legitimate explicit position-containment expectation in **every** mode;
+it does not tell the model which mode is faulty. Both sides must be re-recorded
+and the old invalid attempt disclosed, not silently replaced in the audit.

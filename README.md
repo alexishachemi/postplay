@@ -9,7 +9,7 @@ from model inputs.
 
 Local, post-session AI playtesting for Godot: record gameplay and telemetry,
 analyze with Meta Muse Spark, and inspect the evidence in a local dashboard.
-Implementation is starting; see [TASKS.md](TASKS.md) for verified progress and
+See [TASKS.md](TASKS.md) for verified progress and
 [PROJECT.md](PROJECT.md) for the approved specification.
 
 ## Development environment
@@ -128,8 +128,9 @@ one-attempt protection and offline report recovery are available. Findings now o
 with clip-local seeking, source context and exact supporting telemetry; hypotheses
 and quarantined claims remain clearly qualified. Empty reports expose coverage and
 limitations; review-only and validation-error outcomes stay distinct. Saved reports
-and clips reopen without credentials or external networking. The complete journey
-check remains the next M3 task. Browsing, inspection/preparation/preview/report commands
+and clips reopen without credentials or external networking. M3 is owner-approved;
+M4's [controlled evaluation](docs/evaluation.md) is ready for owner exit review,
+including initial failures and qualified findings. Browsing, inspection/preparation/preview/report commands
 do not upload or imply a clean game.
 
 The [M2 real smoke audit](docs/m2-smoke-audit.md) records the verified capture →

@@ -6,7 +6,12 @@ launch flags, test drivers or hand-edited session/report files. The smoke demo
 does not yet contain M4's three bug/clean pairs. A valid empty result is expected
 to be possible; do not manufacture a finding to complete this check.
 
-**Verification status:** the real capture, real browser submission and saved-report
+**Owner update (2026-11-03):** M3 was approved after the owner's synchronization
+and app checks, including one successful paid call. The preparation-time notes
+below distinguish earlier separate automated checks from that owner confirmation.
+M4 results are recorded separately in [the evaluation](evaluation.md).
+
+**Earlier verification status:** the real capture, real browser submission and saved-report
 review have been observed in separate checks, linked below. A fresh human run of
 this entire walkthrough remains pending. This document does not approve the M3
 owner gate or claim those separate checks were one uninterrupted human session.

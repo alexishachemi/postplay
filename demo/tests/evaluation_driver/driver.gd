@@ -26,17 +26,25 @@ func run_evaluation() -> void:
 	assert(plugin != null)
 	var output: String = OS.get_cmdline_user_args()[0]
 	ProjectSettings.set_setting("application/run/main_scene", "res://playtest.tscn")
+	ProjectSettings.set_setting("editor/run/main_run_args", "--disable-vsync")
 	ProjectSettings.set_setting("postplay/output_directory", output.path_join("sessions"))
 	assert(ProjectSettings.save() == OK)
 	var previous: bool = editor.is_movie_maker_enabled()
 	var runs: Array = []
 	var pairs := [["progress", false], ["ui", true], ["boundary", false], ["progress", true], ["ui", false], ["boundary", true]]
+	if OS.get_cmdline_user_args().size() > 1 and OS.get_cmdline_user_args()[1] == "boundary-pair":
+		pairs = [["boundary", false], ["boundary", true]]
 	for pair in pairs:
 		OS.set_environment("POSTPLAY_DEMO_CASE", pair[0])
 		OS.set_environment("POSTPLAY_DEMO_FAULT", "1" if pair[1] else "0")
 		assert(plugin.start_recording() == OK)
 		var directory: String = plugin._directory
-		assert(await wait_until(func(): return plugin._directory.is_empty() and plugin._worker == null))
+		if not await wait_until(func(): return plugin._directory.is_empty() and plugin._worker == null):
+			push_error("Recording deadline exceeded; preserve capture and do not count it as evaluation coverage")
+			plugin.stop_recording()
+			await wait_until(func(): return plugin._directory.is_empty() and plugin._worker == null, 15.0)
+			get_tree().quit(1)
+			return
 		assert(Files.read_json(directory.path_join("session.json")).status == "complete")
 		assert(editor.is_movie_maker_enabled() == previous)
 		runs.append({"scenario": pair[0], "fault_enabled": pair[1], "session_id": directory.get_file()})

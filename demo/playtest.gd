@@ -36,6 +36,7 @@ func _ready() -> void:
 		capture.set_input_actions(["ui_left", "ui_right", "ui_up", "ui_down", "ui_accept", "depot_reset", "ui_focus_next"])
 		capture.set_player(self, 500, "player_position", "scene_local")
 		capture.set_playable_bounds(PLAY_AREA, "Player must remain in the outlined arena", "scene_local")
+		capture.watch_property(self, "player_position", "Player center in scene-local arena", 500, "Player center must stay within x60–900 and y190–470, the outlined playable arena. This rule applies throughout gameplay.")
 		capture.watch_property(self, "energy", "Authoritative energy", 200)
 		capture.watch_property(self, "displayed_energy", "HUD energy", 200, "HUD energy must match authoritative energy immediately after a console interaction.")
 		capture.watch_property(self, "transferring", "Transfer in progress", 200)
