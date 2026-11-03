@@ -22,7 +22,7 @@ open gate. Raw signals confirm successful/failed reset and dispatch attempts;
 the clean progression recording reaches delivery. See [demo/reproduction](demo.md).
 
 Analysis uses unchanged version1 prompts/schema, Standard Muse Spark
-`muse-spark-1.3`, one planned request per session and no automatic retry. Only
+`muse-spark-1.3`, one planned request per preparation and no automatic retry. Only
 actual video plus correlated telemetry/legitimate common expectations are sent.
 Prepared contexts are 24,715–29,674 bytes, preserving all eligible observations.
 Ground-truth fields, environment selectors and test-driver names were absent from
@@ -69,7 +69,7 @@ claim of a blinded, preregistered benchmark. The improvement supplied the common
 existing game rule, not the faulty mode, expected answer, fabricated event or
 handwritten finding. Version1 prompts/schemas and certainty/evidence validators
 were not relaxed. Output default remains4096; explicit server-only overrides are
-bounded512–8192 and recorded/revalidated with each attempt. The two higher-cap
+bounded512–8192 and recorded/revalidated with each attempt. All three higher-cap
 follow-ups happened to use fewer than4096 output tokens; that does not establish
 that increasing the cap alone caused success.
 
