@@ -146,6 +146,10 @@ editor-capture-test:
 fresh-project-test:
     node app/scripts/fresh-project-check.ts
 
+# GUI/X11: install the built addon ZIP in an independent project, then record twice.
+addon-archive-test archive:
+    node app/scripts/fresh-project-check.ts --addon-archive "$1" --software-renderer
+
 # GUI: measure three visible beacon flashes in a disposable calibration recording.
 sync-capture-test:
     node app/scripts/editor-capture-check.ts --timing

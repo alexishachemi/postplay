@@ -29,7 +29,7 @@ ffprobe -version
 ```
 
 The flake provides the custom Godot editor, Node.js 24 with npm, FFmpeg/FFprobe,
-Git, just, and nixfmt. `flake.lock` pins nixpkgs; the supplied Godot derivation pins
+Git, just, nixfmt and unzip (for archive checks). `flake.lock` pins nixpkgs; the supplied Godot derivation pins
 its upstream binary and hash. npm is the selected JavaScript package manager;
 `app/package-lock.json` pins the application dependencies.
 
@@ -48,8 +48,12 @@ and other operating systems remain **unverified**.
 
 Keep `MODEL_API_KEY` in the local environment only. Never put credentials in
 Nix expressions or Git. No model requests are made by entering the shell.
-Dashboard packaging (`nix build` / `nix run`) and addon archives are not yet
-implemented.
+Default dashboard packaging (`nix build` / `nix run` without an attribute) is
+**deferred**, not implemented. Use the devShell launch below. The optional
+source-only addon ZIP is available with `nix build .#godot-addon`, producing
+`result/postplay-godot-addon.zip`; extract it into a game root and follow the
+[enable/install guide](docs/addon-integration.md). Godot and FFmpeg are still
+required; the installed addon does not require Nix.
 
 ## First session: record → analyze → inspect
 
@@ -173,6 +177,7 @@ Godot/Node/FFmpeg prerequisites.
 | `just workflow-test` | Reserved-session lifecycle, media finalization and failure fixtures |
 | `just editor-capture-test` | Explicit GUI editor recording/restoration check in a disposable project |
 | `just fresh-project-test` | GUI: copy/enable the addon in an independent project; capture without/with watches |
+| `just addon-archive-test result/postplay-godot-addon.zip` | GUI/X11: install built ZIP and verify two independent-project captures with software rendering |
 | `just sync-test` / `just sync-capture-test` | Deterministic mappings / real GUI visible-event calibration |
 | `just sync-measure SESSION OBSERVATIONS [CLOCK] [--apply]` | Preview a measured anchor; opt in to backed-up metadata update |
 | `just nix-check` | Evaluate the flake outputs |

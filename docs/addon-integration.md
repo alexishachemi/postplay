@@ -40,8 +40,27 @@ not been independently verified here.
    writable absolute directory or `user://` / `res://` directory. Default:
    `user://postplay/sessions`. The editor prints the resolved session directory.
 
-No packaging archive is needed. The optional addon ZIP/Nix package is not
-implemented; copying the source folder is the tested installation method.
+No packaging archive is needed for source installation. Alternatively build the
+optional ZIP from this repository:
+
+```sh
+nix build .#godot-addon
+```
+
+Extract `result/postplay-godot-addon.zip` into your game's root; it contains only
+`addons/postplay/` sources, UIDs and `plugin.cfg`. If that addon already exists,
+back it up and deliberately replace it rather than blindly merging files.
+Then follow steps2–4 above. The extracted addon requires Godot/FFmpeg, **not Nix**.
+Default `nix build`/`nix run` dashboard packaging remains deferred.
+
+The actual archive was built/inspected and installed in an independent fixture
+on2026-11-04 with pinned Godot4.7.2: two real3-second480×270/30fps captures,
+without hooks then with an existing signal/property watch; ordinary inactive run,
+Movie Maker settings restoration and disable/autoload removal passed. Repeat
+with `nix develop -c just addon-archive-test result/postplay-godot-addon.zip`.
+This GUI check requires X11/XWayland DISPLAY and Mesa software rendering; it
+changes only a disposable fixture, not the owner's editor. A separately installed
+non-Nix editor/other operating system is still unverified.
 
 ## First capture: no annotations
 

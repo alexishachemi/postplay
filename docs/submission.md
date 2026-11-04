@@ -136,6 +136,12 @@ manual milestone checks. Do not describe the project as built without AI help.
 
 ## Owner-only submission checklist
 
+Distribution status: the required `nix develop` workflow works; secondary
+dashboard `packages.default`/`apps.default` are explicitly deferred. The optional
+source-only addon ZIP is built with `nix build .#godot-addon` and independently
+installed/enabled/recorded in the pinned environment; see
+[installation](addon-integration.md). No NixOS service, installer or hosted URL.
+
 - Confirm portal fields, eligibility/originality/AI disclosure, deadline/timezone,
   video limits, repository visibility and whether hosted access is required.
   If any requirement changes the approved local-only scope, decide explicitly.

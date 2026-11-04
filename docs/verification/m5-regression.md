@@ -22,6 +22,14 @@ It does not insert the real key into a build. Initial test assumptions about
 external JavaScript files and scripts on an empty page failed; inspecting the
 actual selected-session HTML corrected the test, not production behavior.
 
+Final regression after adding the two submission-copy checks: **145 tests**, Godot
+smoke, Astro65 files with zero diagnostics and production build passed. The real
+merged judge-library browser rehearsal also passed without credentials or outbound
+server networking; six selected reports plus the original invalid output, exact
+finding seeks/raw events, zero POSTs and all nine analysis-stage hashes unchanged.
+The loaded key was absent from174 then-tracked files; no recordings/artifacts/.env
+were tracked. This exact-value scan does not certify absence of all possible secrets.
+
 | Boundary | Exercised behavior / test file in `app/tests/` |
 | --- | --- |
 | Portable serialization | `session-contract`, `collector`, `watchers`: bounded safe values, invalid IDs/values, freed sources, repeated runs, caps and interrupted writes |

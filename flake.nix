@@ -12,6 +12,8 @@
       godot = import ./nix/godot.nix nixpkgs;
     in
     {
+      packages.${system}.godot-addon = import ./nix/addon.nix { inherit pkgs; };
+
       devShells.${system}.default = pkgs.mkShell {
         packages = [
           godot
@@ -20,6 +22,7 @@
           pkgs.git
           pkgs.just
           pkgs.nixfmt
+          pkgs.unzip
         ];
       };
     };
