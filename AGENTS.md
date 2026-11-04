@@ -75,7 +75,7 @@ Keep changes surgical:
 - **Checkpoint at meaningful boundaries:** after a substantial implemented substep, a relevant test, a new blocker or changed decision, and before a planned pause or high-risk operation. Record files affected, observed results, and the next actionable step. Do not update after every minor edit/tool call.
 - Do not defer all progress recording until the end of the session; usage limits, crashes, and context loss may prevent a final handoff.
 - If a new discovery invalidates the plan, document it and seek approval when required by §2.
-- **Use one Codex agent.** Do not spawn or delegate to sub-agents; the active agent owns implementation, integration, verification, and progress records.
+- **Use one Codex agent.** Do not spawn or delegate to sub-agents unless explicitely told otherwise by the user; the active agent owns implementation, integration, verification, and progress records.
 
 ### Resuming after an unexpected interruption
 
