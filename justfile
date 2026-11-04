@@ -33,6 +33,47 @@ demo *args:
 editor:
     godot --editor --path demo
 
+# Install missing canonical addon copies; existing differences are never overwritten.
+showcases-install:
+    node app/scripts/showcase-addons.ts install
+
+# Verify both showcase addon copies match the canonical source byte-for-byte.
+showcases-addon-check:
+    node app/scripts/showcase-addons.ts check
+
+# Play the visual sci-fi platformer (default clean; developer environment selects faults).
+platformer *args:
+    godot --path demos/2d_platformer "$@"
+
+# Open the platformer editor to use Record Session / Stop PostPlay.
+platformer-editor:
+    godot --editor --path demos/2d_platformer
+
+# Play the visual fantasy top-down quest (default clean).
+top-down *args:
+    godot --path demos/top_down "$@"
+
+# Open the top-down editor to record independently of the old smoke demo.
+top-down-editor:
+    godot --editor --path demos/top_down
+
+# Deterministic platformer gameplay checks; supplied local assets required.
+platformer-test:
+    godot --headless --editor --import --quit --path demos/2d_platformer
+    godot --headless --path demos/2d_platformer res://tests/game_test.tscn
+
+# Deterministic quest checks; supplied local assets required, no API calls.
+top-down-test:
+    godot --headless --editor --import --quit --path demos/top_down
+    godot --headless --path demos/top_down res://tests/gameplay.tscn
+
+# Verify current addon and both gameplay suites. No recording or uploads.
+showcases-test: showcases-addon-check platformer-test top-down-test
+
+# GUI/X11: actual six-second Movie Maker recording + measured timing + local preparation.
+showcase-capture-check game:
+    node app/scripts/check-showcase-capture.ts "$1"
+
 # Play Relay Depot; optional developer-only environment selects one fault.
 depot *args:
     godot --path demo res://playtest.tscn "$@"

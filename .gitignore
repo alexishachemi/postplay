@@ -10,6 +10,9 @@ sessions/
 !app/src/pages/api/sessions/**
 recordings/
 artifacts/
+# Owner-supplied showcase art: not cleared for redistribution (platformer forbids it).
+demos/2d_platformer/assets/
+demos/top_down/assets/
 *.avi
 *.ogv
 *.mp4
