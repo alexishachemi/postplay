@@ -112,3 +112,26 @@ test('stage persistence precedes requests; a failed inference checkpoint prevent
   assert.deepEqual(calls, ['POST /v1/files', 'DELETE /v1/files/file-fixture']);
   assert.equal(o.saves.has('api-result.json'), false);
 });
+
+test('unconfirmed and failed deletion preserve successful inference without claiming cleanup or retrying it', async () => {
+  for (const outcome of ['unconfirmed', 'failed'] as const) {
+    const calls: string[] = [];
+    const base = client(() => Response.json(envelope()), calls);
+    const o = options(async (url, init) => {
+      if (init?.method !== 'DELETE') return await base(url, init);
+      calls.push('DELETE /v1/files/file-fixture');
+      return outcome === 'failed'
+        ? Response.json({ error: { message: 'fixture-sensitive-key' } }, { status: 503 })
+        : Response.json({ deleted: false });
+    });
+    assert.equal((await analyzeMuse(o)).findings.length, 0);
+    assert.equal((o.saves.get('api-result.json') as Record<string, unknown>).status, 'validated_proposal');
+    const cleanup = o.saves.get('cleanup.json') as Record<string, unknown>;
+    assert.equal(cleanup.status, outcome === 'failed' ? 'delete_failed' : 'delete_unconfirmed');
+    assert.equal(calls.filter(c => c.includes('/responses')).length, 1);
+    assert.equal(calls.filter(c => c.startsWith('DELETE')).length, 1);
+    assert.ok(!JSON.stringify([...o.saves]).includes('fixture-sensitive-key'));
+    // Requested expiry is a precaution, never a confirmed deletion.
+    assert.equal((o.saves.get('upload-attempt.json') as Record<string, unknown>).expiry_seconds, 3600);
+  }
+});

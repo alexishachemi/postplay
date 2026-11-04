@@ -171,7 +171,27 @@ test('byte range responses support seeks, suffixes, HEAD and safe unsatisfiable 
 // Test the actual bundled Node server: a source-only unit check cannot catch
 // resource URLs that change depth when Astro emits server/chunks modules.
 const app = new URL('../', import.meta.url).pathname;
-execFileSync('npm', ['run', 'build'], { cwd: app, stdio: 'pipe', timeout: 30000 });
+const buildCredential = 'fixture-build-only-credential-never-public-5d13';
+execFileSync('npm', ['run', 'build'], { cwd: app, stdio: 'pipe', timeout: 30000, env: { ...process.env, MODEL_API_KEY: buildCredential } });
+test('browser assets and inline scripts contain neither build-time credentials nor the privileged Meta endpoint', async () => {
+  const client = join(app, 'dist/client');
+  const files = readdirSync(client, { recursive: true }).map(String).filter(name => statSync(join(client, name)).isFile());
+  assert.ok(files.length > 0, 'Inspect actual built assets, not an empty directory');
+  for (const name of files) {
+    const bytes = readFileSync(join(client, name));
+    assert.ok(!bytes.includes(Buffer.from(buildCredential)), `Build credential leaked into ${name}`);
+    assert.ok(!bytes.includes(Buffer.from('api.meta.ai')), `Privileged API endpoint bundled into ${name}`);
+  }
+  // Astro currently inlines the small component scripts into SSR HTML.
+  const library = mkdtempSync(join(root, 'bundle-privacy-'));
+  const fixture = await createInspectionFixture(library);
+  await withServer(library, async base => {
+    const html = await (await fetch(base + '/?session=' + fixture.id)).text();
+    assert.match(html, /<script\b/);
+    assert.ok(!html.includes(buildCredential));
+    assert.ok(!html.includes('api.meta.ai'));
+  }, '', true);
+});
 async function withServer(libraryRoot: string, use: (base: string) => Promise<void>, credential = 'fixture-sensitive-key', denyOutbound = false) {
   const reservation = createServer(); reservation.listen(0, '127.0.0.1'); await once(reservation, 'listening');
   const address = reservation.address(); assert.ok(address && typeof address !== 'string'); const port = address.port;
