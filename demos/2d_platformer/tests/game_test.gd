@@ -32,6 +32,20 @@ func _dispose(game: Node) -> void:
 func _run() -> void:
 	var game := _new_game("hud", false)
 	await _tick(4)
+	# Validate the actual replacement atlas regions, not only resource paths.
+	var tiles: Texture2D = game._tiles
+	_expect(tiles.get_size() == Vector2(160, 160), "Replacement platform sheet has expected dimensions")
+	var atlas: SpriteFrames = game.player.sprite.sprite_frames
+	for animation in ["idle", "run"]:
+		var count := 4 if animation == "run" else 3
+		_expect(atlas.get_frame_count(animation) == count, "Replacement animation uses only nonempty frames: %s" % animation)
+		for index in range(count):
+			var texture: AtlasTexture = atlas.get_frame_texture(animation, index)
+			_expect(texture.atlas.get_size() == Vector2(128, 256), "Replacement character sheet dimensions")
+			_expect(Rect2(Vector2.ZERO, texture.atlas.get_size()).encloses(texture.region), "Animation region stays within character sheet")
+			var image := texture.atlas.get_image().get_region(Rect2i(texture.region))
+			_expect(image.get_used_rect().has_area(), "Animation frame contains visible artwork")
+			_expect(texture.region.position.y == (32 if animation == "run" else 0), "Idle and run use their distinct intended atlas rows")
 	_expect(game.player.is_on_floor(), "Pilot starts on the deck")
 	_expect(game.cells == 0 and game.displayed_cells == 0, "Run starts empty")
 	game.collect_cell(0)

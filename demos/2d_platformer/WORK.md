@@ -1,5 +1,19 @@
 # S1.1 — Starfall Relay checkpoint
 
+S1.4 follow-up in progress: owner replaced the original restricted pack with
+character-rogue.png/platform-template.png, states redistribution with a game is
+permitted, and requested all demo assets committed. Current code maps three idle
+and four run frames and the blue floor strip from these replacement sheets.
+The original S1.1 verification/old-art licensing notes below are historical;
+new atlas/gameplay/capture checks and asset provenance are recorded by the primary
+in TASKS.md. No original replacement PNG bytes edited. Verified both game suites,
+full147 tests/Astro68 zero diagnostics/build, and cold imports/gameplay from a
+fresh staged export without caches or untracked art. New actual plugin capture
+artifacts/showcase-capture-bkOiGw is6s/79events/12registrations, measured stripe
+frames29/89/149=>36ms uncertainty, prepared locally and source frame visually
+inspected. Initial atlas test caught the empty fourth idle cell; fixed to three
+idle/four run frames. No paid calls. Asset commit status is maintained in TASKS.md.
+
 - Status: gameplay implementation and focused tests passed, 2026-11-04. Primary owns TASKS.md and canonical addon distribution.
 - Objective: supplied-sprite CharacterBody2D platformer, clean default, private reproducible HUD / containment faults, optional public observations and screen-space timing pulse.
 - Plan: build a single-screen ascending station route; add deterministic physics/gameplay tests; import/run inside Nix; document real capture workflow and licensing limitations. No paid inference or claimed model results.

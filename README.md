@@ -7,12 +7,12 @@ The M4 [Relay Depot demo](docs/demo.md) provides the three controlled bug/clean
 pairs; [evaluation results and limitations](docs/evaluation.md) are kept separate
 from model inputs.
 
-Two additional [visual showcase games](demos/README.md) use locally supplied art:
+Two additional [visual showcase games](demos/README.md) include owner-supplied art:
 **Starfall Relay**, a platformer (`just platformer`), and **Harbor Warden**, a
 top-down quest (`just top-down`). Both integrate the unchanged addon, default to
 working clean gameplay, and offer developer-only reproducible fault cases.
 Their clean modes are not claimed to have empty model reports; no new inference
-was run. See the showcase guide for asset-license/distribution restrictions.
+was run. See the [asset notices](demos/ASSET_NOTICES.md) for permission provenance.
 
 Local, post-session AI playtesting for Godot: record gameplay and telemetry,
 analyze with Meta Muse Spark, and inspect the evidence in a local dashboard.

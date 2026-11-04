@@ -1,7 +1,7 @@
 # Starfall Relay — 2D platformer showcase
 
-A small, single-room space-station platformer using the supplied pixel-art pilot
-and station tiles. Jump between three elevated decks, collect their power cells,
+A small, single-room space-station platformer using the supplied pixel-art rogue
+and blue platform tiles. Jump between three elevated decks, collect their power cells,
 then return to deck level and enter the east airlock. The default game is clean.
 This showcase complements the original Relay Depot evaluation; it does not replace
 or retroactively change its results.
@@ -95,12 +95,18 @@ No paid Muse call or model accuracy result is claimed for this new game.
 A functioning clean game is **not** a verified empty Muse report; a new live
 analysis needs explicit upload consent and budget consideration.
 
-## Asset licensing
+## Included assets
 
-The owner supplied `assets/sci-fi platformer - free/player.png` and `tileset.png`.
-Their accompanying `README.txt` permits **noncommercial projects only** and
-prohibits resale/redistribution of the asset pack, including modified versions.
-The assets remain untouched and are not part of the source commit. Obtain the
-appropriate assets/permissions separately before distributing this game or its
-screenshots/recordings. A fresh checkout without these local images cannot run
-the sprite showcase. Do not include them in the PostPlay addon ZIP.
+`assets/character-rogue.png` is a128×256 atlas with32×32 cells: the first row is
+the three-frame idle animation (the fourth cell is empty), and the second row is
+the four-frame run animation.
+`assets/platform-template.png` is160×160; the blue floor strip at `(0,48,16,8)`
+is displayed at uniform3× scale. The player's feet and collision shape remain
+aligned; replacement artwork does not change movement or scenario semantics.
+
+These files replace the removed restricted sci-fi pack. The owner states the new
+art permits redistribution alongside the game and requested both demos' artwork
+committed. Original PNGs are included unchanged, so fresh checkouts have the art.
+See [asset notices](../ASSET_NOTICES.md): no third-party license or attribution was
+supplied, and no broader standalone-pack license is invented. The addon ZIP does
+not include game artwork.

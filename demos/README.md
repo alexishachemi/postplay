@@ -22,19 +22,19 @@ and expected behavior are the same in both modes. A working clean route is **not
 a claim of an empty Muse report**. These new games have not been evaluated with
 paid model calls. Do not synthesize findings or reuse another game's report.
 
-## Local assets and distribution
+## Included assets and provenance
 
-The owner supplied each game's `assets/` directory. Source art is deliberately
-ignored/uncommitted, never deleted or rewritten by setup. On another checkout,
-obtain the assets from their author and put them at the paths listed in each game
-README before launching. The core smoke demo/dashboard do not need these packs.
+Both games' supplied PNG artwork and original Aseprite sources are versioned so
+a checkout can run them without separately obtaining art. The owner replaced the
+restricted platformer pack with `character-rogue.png` / `platform-template.png`,
+states that the replacements permit redistribution alongside a game, and
+explicitly requested all demo assets committed. Generated import/cache files and
+OS metadata remain excluded; original images are not modified by setup.
 
-The sci-fi free pack README permits non-commercial projects and prohibits
-redistributing the pack, even modified. It is **not included in the addon ZIP**.
-No license document was found in the supplied Tiny Swords directory. Do not infer
-that its files are public domain or redistribution-cleared. Confirm permission
-before publishing screenshots/video, packaging either game, or distributing art.
-The original owner-provided asset files remain on disk for local use.
+See [asset notices](ASSET_NOTICES.md) for the supplied-file inventory and permission
+provenance. No third-party license or author attribution was supplied; do not
+infer CC0 or a standalone asset-pack license. The art is **not** included in the
+source-only addon ZIP. The core smoke demo/dashboard do not depend on these packs.
 
 ## Record → measure → analyze → inspect
 

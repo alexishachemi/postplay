@@ -21,20 +21,21 @@ func _ready() -> void:
 	add_child(shape)
 	sprite = AnimatedSprite2D.new()
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	# The provided 32px cell has transparent margins; align its boots to body feet.
-	sprite.position = Vector2(0, -15)
-	sprite.scale = Vector2(2.5, 2.5)
+	# The rogue occupies a transparent 32px cell; align its boots to body feet.
+	sprite.position = Vector2(0, -24)
+	sprite.scale = Vector2(3, 3)
 	var frames := SpriteFrames.new()
 	frames.remove_animation("default")
-	var sheet: Texture2D = load("res://assets/sci-fi platformer - free/player.png")
+	var sheet: Texture2D = load("res://assets/character-rogue.png")
 	for animation in ["idle", "run"]:
 		frames.add_animation(animation)
 		frames.set_animation_speed(animation, 9.0)
-		var count := 4 if animation == "run" else 1
+		var row := 32 if animation == "run" else 0
+		var count := 4 if animation == "run" else 3
 		for index in range(count):
 			var texture := AtlasTexture.new()
 			texture.atlas = sheet
-			texture.region = Rect2(index * 32, 0, 32, 32)
+			texture.region = Rect2(index * 32, row, 32, 32)
 			frames.add_frame(animation, texture)
 	sprite.sprite_frames = frames
 	add_child(sprite)

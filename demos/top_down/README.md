@@ -43,4 +43,7 @@ nix develop -c godot --headless --path demos/top_down res://tests/gameplay.tscn
 
 These exercise all four clean/fault configurations, collection uniqueness, gate collision, repair timing/cancellation/refund, completion, repeated failed recovery attempts, full restart and pulse lifetime. They exercise normal gameplay with the addon inactive, not real Movie Maker capture or model reasoning.
 
-Assets remain under their supplied original directory and names. No licensing terms are invented here; refer to the original supplied pack/author terms before redistribution.
+Original PNG artwork and Aseprite sources are included under their supplied
+directory/names at the owner's explicit request. Generated imports/caches and OS
+metadata are excluded. See [asset notices](../ASSET_NOTICES.md); no third-party
+license or attribution was supplied, and this repository does not invent one.

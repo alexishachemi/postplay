@@ -32,7 +32,7 @@ var _wall: StaticBody2D
 func _ready() -> void:
 	_fault_case = OS.get_environment("POSTPLAY_DEMO_CASE")
 	_fault_enabled = OS.get_environment("POSTPLAY_DEMO_FAULT") == "1"
-	_tiles = load("res://assets/sci-fi platformer - free/tileset.png")
+	_tiles = load("res://assets/platform-template.png")
 	for platform in PLATFORMS:
 		_make_solid(platform)
 	_make_solid(Rect2(12, 155, 24, 510))
@@ -197,8 +197,10 @@ func _draw() -> void:
 	for platform in PLATFORMS:
 		draw_rect(platform, Color("273650"))
 		for x in range(int(platform.position.x), int(platform.end.x), 48):
-			draw_texture_rect_region(_tiles, Rect2(x, platform.position.y, minf(48, platform.end.x - x), 24), Rect2(0, 112, minf(48, platform.end.x - x), 16))
-		draw_line(platform.position, Vector2(platform.end.x, platform.position.y), Color("5ccdb6"), 3)
+			var width := minf(48, platform.end.x - x)
+			# The blue floor strip is 16×8px, displayed at a uniform 3× scale.
+			draw_texture_rect_region(_tiles, Rect2(x, platform.position.y, width, 24), Rect2(0, 48, width / 3.0, 8))
+		draw_line(platform.position, Vector2(platform.end.x, platform.position.y), Color("9ab6ff"), 3)
 		draw_rect(Rect2(platform.position + Vector2(0, platform.size.y), Vector2(platform.size.x, 6)), Color("0a111f"))
 	draw_rect(PLAY_AREA, Color("4a7b9a"), false, 2)
 	for index in range(CELL_POSITIONS.size()):
