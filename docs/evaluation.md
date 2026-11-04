@@ -1,7 +1,8 @@
 # M4 six-session evaluation
 
-Status: evaluation complete on **2026-11-03; awaiting owner M4 exit review**.
-The owner authorized autonomous M4 work, not automatic approval of its exit gate.
+Status: evaluation complete on **2026-11-03; owner approved M4 on 2026-11-04**.
+Approval accepts the documented results and limitations; it does not erase failed
+attempts or turn model candidates into demonstrated facts.
 
 Local ignored artifacts: original batch `artifacts/evaluation-L9Gxm3/` and revised
 boundary pair `artifacts/evaluation-qniM0d/`. The selected six sessions are

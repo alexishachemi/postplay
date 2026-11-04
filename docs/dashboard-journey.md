@@ -3,7 +3,7 @@
 This is the supported checkout workflow for the current smoke demo. It uses the
 editor toolbar, documented Just commands and dashboard controls—not internal
 launch flags, test drivers or hand-edited session/report files. The smoke demo
-does not yet contain M4's three bug/clean pairs. A valid empty result is expected
+is separate from [Relay Depot's three bug/clean pairs](demo.md). A valid empty result is expected
 to be possible; do not manufacture a finding to complete this check.
 
 **Owner update (2026-11-03):** M3 was approved after the owner's synchronization

@@ -35,14 +35,100 @@ The custom Godot launcher uses an FHS environment and needs a host that permits
 its sandbox/user-namespace setup. A headless version check does not demonstrate
 interactive recording; Movie Maker feasibility is a separate M0 check.
 
-Without Nix, the intended prerequisites are a compatible Godot 4.x editor,
-Node.js 24 with npm, and FFmpeg/FFprobe on PATH. This path has not yet been
-verified. Application launch instructions will follow implementation.
+Without Nix, install the Godot **4.7.2 editor**, Node.js **24.21.x** with npm
+**11.19.x**, FFmpeg/FFprobe (including `libx264`), Git and `just` on PATH. Run
+the same commands below, omitting `nix develop`. Without Just, use
+`npm --prefix app ci --ignore-scripts`, `npm --prefix app run build`,
+`npm --prefix app start`, and `godot --editor --path demo`.
+Launch the editor from that terminal so it inherits FFmpeg's PATH.
+Linux with the pinned Nix environment is tested; independent non-Nix installation
+and other operating systems remain **unverified**.
 
 Keep `MODEL_API_KEY` in the local environment only. Never put credentials in
 Nix expressions or Git. No model requests are made by entering the shell.
 Dashboard packaging (`nix build` / `nix run`) and addon archives are not yet
 implemented.
+
+## First session: record → analyze → inspect
+
+From a fresh checkout, in a terminal at the repository root:
+
+```sh
+nix develop
+just install
+just build
+export POSTPLAY_SESSION_ROOT="$PWD/recordings"
+just app-start
+```
+
+Open <http://127.0.0.1:4321>. The production server runs in the foreground;
+Ctrl+C stops it. In a second terminal at the same root, enter `nix develop`,
+set the **same** `POSTPLAY_SESSION_ROOT`, then run `just editor`. In Project
+Settings (Advanced), add/save the String setting
+`postplay/output_directory = res://../recordings`. Godot's default `user://`
+directory and the dashboard's XDG default are different; neither discovers the
+other's files automatically.
+
+Follow the [supported walkthrough](docs/dashboard-journey.md) in order:
+
+1. Add the documented existing beacon-signal watch to the stock smoke scene;
+   click **Record Session**, interact several times, then **Stop PostPlay**.
+   Normal F5 play is not a PostPlay recording.
+2. Select the new UUID and create a **local preview**. Check framing, playback
+   and telemetry before analysis.
+3. Measure at least two visible events in this exact recording, then apply
+   their mapping with `just sync-measure`. The [timing guide](docs/synchronization.md)
+   supplies the observations JSON format. This required CLI step is not automated
+   by the dashboard; do not edit the manifest to bypass it.
+4. Prepare a bounded analysis clip locally and review its event count and upload
+   sizes. Restart the server with `MODEL_API_KEY` supplied by your local secret
+   mechanism, then explicitly consent to **upload to Meta**. Keep the key out of
+   command arguments, browser fields, tracked files and Nix. Loading it alone
+   triggers no request. Each preparation permits one attempt; inspect saved
+   status before a deliberate paid follow-up.
+5. Inspect findings against video and raw telemetry, or read the empty report's
+   coverage limits. Quarantined, failed and incomplete results are not clean
+   sessions. Confirm remote cleanup status. Saved reports reopen without a key
+   or external network.
+
+For your own game, [copy and enable only the addon](docs/addon-integration.md).
+For the three controlled bug/clean pairs, follow [Relay Depot](docs/demo.md),
+including main-scene selection and developer-only environment settings. Never
+send mode selectors or evaluation answers to the model.
+
+### No-key UI tour
+
+```sh
+nix develop
+just install
+just inspection-fixture
+```
+
+Copy the printed `session_root` into `POSTPLAY_SESSION_ROOT`, then run
+`just build` and `just app-start`. Select the printed session UUID and inspect
+its video, finding and raw event. This **synthetic UI fixture uses mocked
+inference**; it is not a real model test or evaluation result. Real evaluation
+packages are local ignored artifacts, absent from a clean checkout.
+
+### Troubleshooting
+
+| Symptom | Check / recovery |
+| --- | --- |
+| Empty library | Match Godot's output root and the server's absolute session root; restart after environment changes. Only portable UUID directories appear, not legacy `smoke-*` data. |
+| Missing toolbar / parse failure | Enable PostPlay in Project Settings → Plugins. Resolve any unrelated `PostPlay` autoload conflict; copy the complete addon folder and UIDs. |
+| Finalization fails | Check editor-inherited FFmpeg/FFprobe PATH, storage and original AVI. Preserve failed output; never overwrite it. |
+| Incomplete after F8/crash | Native Stop can kill the game before finalization. See [recovery](docs/editor-capture.md); do not relabel it complete. Use Stop PostPlay normally. |
+| Cropped or offset movie | Inspect the original AVI, viewport/stretch and camera configuration. The addon does not alter cameras; the old smoke clip's crop is documented below. |
+| Unknown synchronization | Measure visible events for this capture before preparation. Lifecycle completion is not a timing measurement. |
+| Missing key / request denied | Load the credential into the server process and restart, not the browser. Check approved Meta access and standard Node proxy settings. Never print the secret for diagnosis. |
+| Reserved or failed analysis | Inspect saved stage/error/cleanup status. Do not delete reservations or spend again just to recover a saved report. |
+| Saved report invalid | Keep original media, manifest, events and preparation stages together. Changed provenance invalidates reports; a JSON file alone is not a portable package. |
+| Port occupied | `just app-stop` stops this checkout's background Astro dev server; production uses Ctrl+C. Stop only your own process. |
+| Recording stalls | The evaluation runner has a tested X11/Mesa software-rendering fallback; see [demo limitations](docs/demo.md). This is not a proven driver fix. |
+
+`just check` runs deterministic regression/type/build checks without paid API
+calls. The [evaluation](docs/evaluation.md) retains failures and actual usage;
+unknown dollar costs require checking Meta billing.
 
 ## Common development commands
 
@@ -55,6 +141,8 @@ Godot/Node/FFmpeg prerequisites.
 | --- | --- |
 | `just install` | Install locked npm dependencies |
 | `just demo` / `just editor` | Launch the demo / Godot editor |
+| `just depot` / `just depot-test` | Play Relay Depot / deterministic gameplay checks |
+| `just evaluation-capture` | GUI: six real scripted captures; no API requests |
 | `just app` / `just app-stop` | Start / stop the background Astro dev server |
 | `just build` / `just app-start` | Build / run the foreground production server |
 | `just record` | Legacy M0 smoke recording; use editor Record Session for portable v1 capture |
@@ -129,7 +217,7 @@ with clip-local seeking, source context and exact supporting telemetry; hypothes
 and quarantined claims remain clearly qualified. Empty reports expose coverage and
 limitations; review-only and validation-error outcomes stay distinct. Saved reports
 and clips reopen without credentials or external networking. M3 is owner-approved;
-M4's [controlled evaluation](docs/evaluation.md) is ready for owner exit review,
+M4's [controlled evaluation](docs/evaluation.md) was owner-approved on 2026-11-04,
 including initial failures and qualified findings. Browsing, inspection/preparation/preview/report commands
 do not upload or imply a clean game.
 
@@ -169,13 +257,13 @@ For a noninteractive parse/load check:
 ```sh
 godot --headless --path demo --editor --import --quit
 godot --headless --path demo --quit-after 2
-godot --headless --path demo --script res://tests/smoke_scene_test.gd
+godot --headless --path demo res://tests/smoke_scene_test.tscn
 ```
 
 Godot's `.godot/` cache, Node dependencies/build output, local sessions,
 recordings and `.env` files are ignored. Keep generated GDScript `.uid` files
-in Git to preserve resource identity. Dashboard analysis is not implemented yet;
-the explicit server-side smoke command below is available.
+in Git to preserve resource identity. The legacy commands below are retained for
+the original M0 capture; use the portable editor/dashboard path for new sessions.
 
 ## Real Muse compatibility smoke
 
@@ -198,7 +286,7 @@ outcomes and must be inspected.
 
 Run deterministic server tests with `npm --prefix app test`. They make no API
 calls. The smoke CLI is a development tool for this specific measured capture;
-general ingestion, budget UX and final report storage remain M1/M2 work.
+general portable ingestion, consent and saved reports use the newer workflow above.
 Development scripts disable Astro's optional framework telemetry.
 
 ## Recording smoke check
@@ -268,7 +356,7 @@ godot --headless --editor --path demo --script res://tests/movie_maker_api_probe
 The API probe verifies toggle restoration and launch/stop method availability;
 it does not launch a recording through the addon. On Godot 4.7.2, this headless
 editor-script probe exits 0 after its assertions but emits resource-leak diagnostics
-at shutdown. Full addon launch/restore remains M1.5 work. The real Meta smoke
+at shutdown. Full addon launch/restore was subsequently verified in M1.5. The real Meta smoke
 is recorded separately above. See [Godot's Movie Maker documentation](https://docs.godotengine.org/en/stable/tutorials/animation/creating_movies.html)
 and [viewport scaling documentation](https://docs.godotengine.org/en/stable/tutorials/rendering/multiple_resolutions.html)
 for upstream recording controls and stretch modes.

@@ -100,7 +100,7 @@ presence checks are conservative (PID reuse can delay finalization rather than
 declare success for a still-running process). Recovery is not a power-loss guarantee.
 
 The finalizer handles this addon's own local capture packages. Safe general import
-and full untrusted runtime-data validation remain M2.1; a complete status does not
+and full untrusted runtime-data validation are handled by M2.1's importer; a complete status does not
 replace import validation. Synchronization remains **unknown** until a visible
 event is measured in that specific recording. Follow the
 [measurement guide](synchronization.md) to preview/apply an anchor and error
@@ -122,5 +122,6 @@ validators and FFprobe. This is separate from `just check`; it requires a displa
 
 The supplied Godot FHS package can emit missing-libdecor and Wayland protocol
 warnings on this host; observed clips still decoded correctly. The original
-package has not been rewritten. Human input responsiveness, editor appearance
-and M1's full capture/synchronization exit gate still require owner verification.
+package has not been rewritten. Human input responsiveness and editor appearance
+were subsequently owner-verified for M1, approved on 2026-10-30. This does not
+establish compatibility with other operating systems or Godot versions.
