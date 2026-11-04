@@ -160,6 +160,16 @@ submission to the same preparation across page reloads or server restarts. Run
 one local server per library; different preparations in separate server processes
 are not coordinated by a cross-process queue.
 
+A confirmed local preparation rejection (for example unknown synchronization or
+an invalid clip range) focuses the error message above the form and restores the
+previously enabled inputs/buttons. Correct the cause before explicitly retrying;
+there is no automatic retry. For unknown synchronization, follow
+[the measurement guide](synchronization.md), apply the measured alignment, then
+refresh. A playable preview alone does not establish telemetry alignment.
+Connection failures, concurrent-operation responses and remote analysis errors
+keep the controls locked: use **Refresh status (no retry)** and inspect the saved
+outcome before considering another action.
+
 If the browser disconnects, **refresh status before doing anything else**. Closing
 a tab does not cancel server work or remote spending. On restart, unfinished saved
 attempts are labeled interrupted/unknown, not running/successful/clean. Failed and
