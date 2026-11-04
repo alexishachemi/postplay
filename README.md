@@ -11,6 +11,8 @@ Local, post-session AI playtesting for Godot: record gameplay and telemetry,
 analyze with Meta Muse Spark, and inspect the evidence in a local dashboard.
 See [TASKS.md](TASKS.md) for verified progress and
 [PROJECT.md](PROJECT.md) for the approved specification.
+For the final presentation, see the [judge walkthrough and submission handoff](docs/submission.md)
+and [regression/privacy verification](docs/verification/m5-regression.md).
 
 ## Development environment
 
@@ -143,6 +145,7 @@ Godot/Node/FFmpeg prerequisites.
 | `just demo` / `just editor` | Launch the demo / Godot editor |
 | `just depot` / `just depot-test` | Play Relay Depot / deterministic gameplay checks |
 | `just evaluation-capture` | GUI: six real scripted captures; no API requests |
+| `just submission-prepare LIBRARY [LIBRARY...]` | Copy saved evidence into a fresh local judge bundle and verify hashes/reports; no upload |
 | `just app` / `just app-stop` | Start / stop the background Astro dev server |
 | `just build` / `just app-start` | Build / run the foreground production server |
 | `just record` | Legacy M0 smoke recording; use editor Record Session for portable v1 capture |

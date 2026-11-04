@@ -5,6 +5,10 @@ set positional-arguments
 default:
     @just --list
 
+# Copy saved session libraries into a NEW local judge bundle, verify hashes/reports; no upload.
+submission-prepare +roots:
+    node app/scripts/prepare-submission.ts "$@"
+
 # Install the locked application dependencies.
 install:
     npm --prefix app ci --ignore-scripts
