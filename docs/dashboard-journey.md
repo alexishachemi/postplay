@@ -80,35 +80,32 @@ are different states; an unknown-sync warning here is correct.
 
 ## 3. Measure the visible-event alignment once, before preparation
 
-Follow the [timing guide](synchronization.md). Read (do not edit) this session's
-`events.jsonl` in a text viewer to find the watched beacon signal IDs and activation
-counts. In the preview, find each corresponding first flash/counter change using
-video-local time. Numeric Seek uses seconds; observations use milliseconds. Record
-at least two well-separated matching events and an honest observer uncertainty.
-Do not use elapsed wall time or reuse another capture's calibration numbers.
+Use **Align video and telemetry locally**, below the player. No terminal, log-file
+inspection or JSON editing is required:
 
-Create your own observations JSON file outside the package, for example
-`recordings/beacon-observations.json`, containing the actual event IDs,
-`video_ms` and `uncertainty_ms` described in the timing guide. This is a new
-measurement input, not a hand edit to internal session metadata. Use a proper
-frame viewer if you cannot bound onset uncertainty with the preview; do not claim
-frame precision from a browser's approximate seek.
+1. Filter the recorded signals by their interaction name. Select the first
+   recognizable event; its payload helps distinguish repeated activation counts.
+2. Pause/seek the video to that event's first visible flash/counter change, then
+   click **Use paused video time** in Match 1. Frame-sized step buttons are available;
+   browser seeking is approximate, not a guarantee of frame accuracy.
+3. Repeat in Match 2 for a different event at least one video second later.
+   Platformer pickups and showcase Tab flashes are suitable visible interactions.
+4. Keep an honest uncertainty allowance for each match (100 ms initially; increase
+   if ambiguous). Check the observation confirmation, then **Review alignment — no
+   upload**. Inspect the status, estimated uncertainty, observed span and residuals.
+5. If the matches are correct, **Save reviewed alignment locally**. Edits invalidate
+   the review; changed source files require another review. Approximate alignment
+   remains approximate and visibly qualified; never tune numbers to force verified.
 
-In the devShell, preview the measurement, then explicitly apply if correct:
-
-```sh
-just sync-measure "$POSTPLAY_SESSION_ROOT/YOUR_SESSION_UUID" "$PWD/recordings/beacon-observations.json"
-just sync-measure "$POSTPLAY_SESSION_ROOT/YOUR_SESSION_UUID" "$PWD/recordings/beacon-observations.json" process_frame --apply
-just session-inspect YOUR_SESSION_UUID
-```
-
-The supported command validates the mapping, saves the previous manifest and
-measurement in an exclusive backup directory, and updates only synchronization
-metadata. Never change `unknown` to `verified` yourself. Approximate/excessive
-error must remain visible; investigate discrepancies rather than adjusting
-measurements to force acceptance. Apply before creating analysis preparations,
-because subsequent metadata changes invalidate their provenance. The existing
-dashboard has no timing-measurement form; this supported CLI step is required.
+The app saves the previous manifest and measurement in an exclusive backup, and
+updates only synchronization metadata. Original video/events remain unchanged.
+It refuses to overwrite existing measurements or sessions with preparation history.
+The app refreshes the local preview because its provenance includes the now-updated
+manifest, then reloads. If that conversion fails, reload and use Create local preview;
+alignment remains saved, so do not recalibrate. Then continue to preparation. Saving alignment never
+uploads or spends credits. Missing visible signal observations require richer
+capture instrumentation, not an invented alignment. The
+[timing guide](synchronization.md) retains an optional developer CLI.
 
 ## 4. Prepare locally, then separately consent to one paid request
 

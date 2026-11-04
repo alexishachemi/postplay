@@ -89,10 +89,11 @@ Follow the [supported walkthrough](docs/dashboard-journey.md) in order:
    Normal F5 play is not a PostPlay recording.
 2. Select the new UUID and create a **local preview**. Check framing, playback
    and telemetry before analysis.
-3. Measure at least two visible events in this exact recording, then apply
-   their mapping with `just sync-measure`. The [timing guide](docs/synchronization.md)
-   supplies the observations JSON format. This required CLI step is not automated
-   by the dashboard; do not edit the manifest to bypass it.
+3. In **Align video and telemetry locally**, select two recorded signal events,
+   pause at their matching visible changes and use **Use paused video time** for
+   each. Review the measured uncertainty, then **Save reviewed alignment locally**.
+   No terminal, JSON editing or upload is needed. The
+   [timing guide](docs/synchronization.md) also documents the optional developer CLI.
 4. Prepare a bounded analysis clip locally and review its event count and upload
    sizes. Restart the server with `MODEL_API_KEY` supplied by your local secret
    mechanism, then explicitly consent to **upload to Meta**. Keep the key out of

@@ -35,7 +35,7 @@ const errors: Record<string, string> = {
   model_refused: 'The model refused or returned unsupported content. No successful report was produced.',
   invalid_preparation: 'Prepared input failed provenance/media validation. Preserve files and prepare a new clip only after inspecting this attempt.',
   analysis_limit: 'Selected clip exceeds the configured analysis limit. Choose a shorter explicit clip; no automatic trimming is performed.',
-  synchronization_unknown: 'Measure a visible-event synchronization anchor before analysis. Local video preview is still available.',
+  synchronization_unknown: 'Use “Align video and telemetry locally” above to match visible events, review and save alignment before analysis. Local video preview is still available.',
   insufficient_telemetry: 'This clip has no alignable gameplay observations. Choose a recorded interaction or add instrumentation.',
   context_limit: 'Aligned telemetry exceeds the budget. Select a shorter clip; observations are not silently dropped.',
   conversion_failed: 'Local FFmpeg conversion failed. Check FFmpeg/FFprobe and the source media; no upload occurred during preparation.',
@@ -59,6 +59,12 @@ export function controlError(error: unknown) {
 }
 const message = (code: string) => errors[code] ?? errors.local_failure!;
 const active = new Map<string, { phase: 'preparing' | 'validating' | 'reporting'; preparation_id: string | null }>();
+/** One local server per library: calibration must not change provenance during preparation/upload. */
+export async function withSessionOperation<T>(id: string, use: () => Promise<T>, phase: 'preparing' | 'validating' | 'reporting' = 'validating', preparation_id: string | null = null): Promise<T> {
+  if (active.has(id)) throw new AnalysisControlError('busy', 409);
+  active.set(id, { phase, preparation_id });
+  try { return await use(); } finally { active.delete(id); }
+}
 async function has(directory: FileHandle, name: string, folder = false) {
   try { const file = await openPackageChild(directory, name, folder); await file.close(); return true; }
   catch (error) { if (error instanceof IngestionError && error.code === 'not_found') return false; throw error; }
@@ -145,9 +151,7 @@ export function parseAnalysisAction(value: unknown): AnalysisAction {
 export async function runAnalysisAction(library: SessionLibrary, id: string, input: AnalysisAction, options: Pick<AnalysisOptions, 'apiKey' | 'fetcher'> = {}) {
   if (!validSessionId(id)) throw new AnalysisControlError('invalid_request', 400);
   const action = parseAnalysisAction(input);
-  if (active.has(id)) throw new AnalysisControlError('busy', 409);
-  active.set(id, { phase: action.action === 'prepare' ? 'preparing' : action.action === 'report' ? 'reporting' : 'validating', preparation_id: action.action === 'prepare' ? null : action.preparation_id });
-  try {
+  return await withSessionOperation(id, async () => {
     if (action.action === 'prepare') {
       if (action.duration_ms > analysisDuration()) throw new AnalysisControlError('analysis_limit');
       const latest = await latestPreparation(library, id);
@@ -172,5 +176,5 @@ export async function runAnalysisAction(library: SessionLibrary, id: string, inp
     active.set(id, { phase: 'reporting', preparation_id: action.preparation_id });
     await createFindingsReport(library, id, action.preparation_id);
     return { preparation_id: action.preparation_id, remote_upload: true };
-  } finally { active.delete(id); }
+  }, action.action === 'prepare' ? 'preparing' : action.action === 'report' ? 'reporting' : 'validating', action.action === 'prepare' ? null : action.preparation_id);
 }

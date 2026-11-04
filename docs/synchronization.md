@@ -3,11 +3,36 @@
 A finalized movie is **not** automatically synchronized. New captures retain
 `synchronization.status: "unknown"` until a visible event is measured in that
 particular recording. Never reuse an offset from another session, or equate wall
-time with fixed-fps Movie Maker time. The [dashboard](dashboard.md) can preview and
-seek video, but measurement still uses the explicit command below. See the
+time with fixed-fps Movie Maker time. The [dashboard](dashboard.md) provides a local
+event/video alignment form; the command below is an optional developer alternative. See the
 [complete walkthrough](dashboard-journey.md) for the order of operations.
 
-## Measure your own recording
+## Measure in the app (normal user workflow)
+
+Create a local preview, then use **Align video and telemetry locally** below the
+player. Filter/select two recorded signal events with recognizable visible changes.
+Pause at each change, click **Use paused video time**, and allow honest uncertainty
+(initially ±100 ms; increase for ambiguous onsets). Choose events at least one second
+apart. Frame-sized seek buttons help inspection but do not guarantee exact frame
+selection. Confirm the matches, review the measured status/error/span/residuals,
+then explicitly save. No terminal, observations file, upload or API key is required.
+
+Editing a match invalidates its review. The save binds the exact matches to source
+and preview hashes, creates the original-manifest/measurement backup, and updates
+only alignment metadata. Original video and events are unchanged. Existing
+measurements or preparation history are never overwritten. The app refreshes the
+local preview after saving, then you can prepare/analyze normally. If preview
+refresh fails, reload and use Create local preview; alignment remains saved. Large uncertainty
+remains approximate, not silently verified. If the connection drops during save,
+refresh and inspect the current alignment before repeating anything.
+
+The UI offers watched signals (including the showcases' Tab pulses or pickups),
+not lifecycle timestamps. It displays at most 200 matching choices at once; filtering
+searches the whole bounded signal list, so later events are still accessible.
+Without any observed interaction with a visible counterpart, record again with
+appropriate instrumentation; the app does not invent synchronization.
+
+## Measure with the optional developer CLI
 
 1. Register an existing signal that accompanies a distinctive visible change.
    For the demo, add `PostPlay.watch_signal(beacon_activated, "Visible beacon")`

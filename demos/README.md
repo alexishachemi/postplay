@@ -47,9 +47,12 @@ source-only addon ZIP. The core smoke demo/dashboard do not depend on these pack
    and playback; original AVI and telemetry are preserved.
 3. Press Tab for at least two well-separated timing pulses during recording.
    Each visibly flashes a magenta stripe and emits watched `timing_pulse` with a
-   sequence number. Correlate actual first-lit frames and event IDs with
-   [the synchronization command](../docs/synchronization.md). Do not reuse the
-   disposable calibration below for another capture. Completion is not alignment.
+   sequence number. In the app's **Align video and telemetry locally** panel,
+   select the matching recorded signals and mark each first visible flash using
+   **Use paused video time**. Review uncertainty and save. Existing platformer
+   recordings can use visible cell pickups instead; no need to re-record solely
+   because Tab was not pressed. See [alignment](../docs/synchronization.md).
+   Do not reuse another recording's calibration. Completion is not alignment.
 4. Prepare the chosen excerpt locally, inspect coverage, then use the existing
    dashboard's separate explicit upload consent if you choose a **paid** Muse
    analysis. The examples themselves never call an API. See the

@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import SessionPlayer from '../components/SessionPlayer.astro';
+import SynchronizationControls from '../components/SynchronizationControls.astro';
 import AnalysisControls from '../components/AnalysisControls.astro';
 import FindingsInspector from '../components/FindingsInspector.astro';
 import { inspectReport, type ReportInspection } from '../server/report-inspection.ts';
@@ -93,6 +94,7 @@ const statusName = (status: string) => status[0]!.toUpperCase() + status.slice(1
             <dl class="mt-6 grid grid-cols-2 gap-x-5 gap-y-5 border-y border-slate-800 py-6 text-sm"><div><dt class="text-xs text-slate-500">SESSION DURATION</dt><dd class="mt-2 font-medium">{duration(selection.duration_ms)}</dd></div><div><dt class="text-xs text-slate-500">SYNCHRONIZATION</dt><dd class="mt-2 capitalize">{selection.synchronization ?? 'Unavailable'}</dd></div><div class="col-span-2"><dt class="text-xs text-slate-500">RECORDED</dt><dd class="mt-2">{recordedDate(selection.recorded_at)}</dd></div><div class="col-span-2"><dt class="text-xs text-slate-500">SCENE</dt><dd class="mt-2 break-all font-mono text-xs">{selection.scene ?? 'Unavailable'}</dd></div></dl>
             <p class="mt-5 break-all font-mono text-xs text-slate-400">{selection.id}</p>
             {player && <SessionPlayer id={selection.id} state={player} synchronization={selection.synchronization} estimated_error_ms={syncError} />}
+            {player && <SynchronizationControls id={selection.id} state={player} synchronization={selection.synchronization} />}
             {findings && <FindingsInspector inspection={findings} />}
             {analysisControls && <AnalysisControls id={selection.id} view={analysisControls} duration_ms={selection.duration_ms} />}
             {selection.report && <div class="mt-5 rounded-lg border border-slate-700 p-4"><h3 class="text-sm font-medium">Saved report validated</h3><p class="mt-2 text-sm text-slate-300">{selection.report.findings} findings · {selection.report.quarantined} quarantined for review</p><p class="mt-2 break-all font-mono text-xs text-slate-400">{selection.report.status}</p><p class="mt-3 text-xs leading-5 text-slate-400">An empty report is not proof of a bug-free game. Quarantined findings are not a clean result.</p></div>}

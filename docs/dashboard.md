@@ -123,8 +123,11 @@ With a session selected, scroll to **Analyze with Muse Spark**:
 1. Choose source start and duration in seconds, then **Prepare locally — no upload**.
    The displayed initial range is explicit (at most the first 30 seconds by default);
    change it if needed. The server does not silently trim to fit a request. Measured
-   synchronization and nonempty aligned telemetry are required; unknown-sync video
-   can still be previewed without analysis. Preparation validates originals, converts
+   synchronization and nonempty aligned telemetry are required. If alignment is
+   unknown, create a local preview and complete **Align video and telemetry locally**
+   first: match two visible signal events, review the measurement and save. No
+   terminal is required; see [the walkthrough](dashboard-journey.md#3-measure-the-visible-event-alignment-once-before-preparation).
+   Preparation validates originals, converts
    the selected clip and saves its context. No key/network is needed for this step.
 2. Review **Prepared upload**: actual source start, duration, video/context byte sizes,
    aligned observation count and preparation UUID. The player shows this excerpt.
@@ -164,8 +167,8 @@ A confirmed local preparation rejection (for example unknown synchronization or
 an invalid clip range) focuses the error message above the form and restores the
 previously enabled inputs/buttons. Correct the cause before explicitly retrying;
 there is no automatic retry. For unknown synchronization, follow
-[the measurement guide](synchronization.md), apply the measured alignment, then
-refresh. A playable preview alone does not establish telemetry alignment.
+the in-app **Align video and telemetry locally** panel, review and save the measured
+alignment. A playable preview alone does not establish telemetry alignment.
 Connection failures, concurrent-operation responses and remote analysis errors
 keep the controls locked: use **Refresh status (no retry)** and inspect the saved
 outcome before considering another action.
@@ -287,6 +290,8 @@ strings in IDs/titles are deliberate safe-rendering fixtures, never executable H
 - `/?page=1&session=SESSION_UUID`: server-rendered list/selection; works without JavaScript.
 - `GET`/`HEAD /api/sessions/SESSION_UUID/video?preparation=PREPARATION_UUID` (or `?preview=PREVIEW_UUID`): validated MP4 snapshot. Exactly one selector, no paths. Single byte ranges support native seeking (206); unsatisfiable/malformed/multiple ranges get 416. With `If-Range` and no stored validator the entire snapshot is returned.
 - `POST /api/sessions/SESSION_UUID/preview`: explicit full-source local conversion/reuse; empty body, `Content-Type: application/json`, valid same-origin `Origin` required. Returns public video metadata and `remote_upload: false`; 409 for duplicate active conversion, 422 for invalid capture/conversion failure.
+- `GET /api/sessions/SESSION_UUID/synchronization`: read-only recorded signal choices, fps and current alignment. No paths, API key or model calls. The UI filters the bounded list locally and renders labels/payload previews as text.
+- `POST /api/sessions/SESSION_UUID/synchronization`: same-origin JSON only, at most8192 streamed bytes. Exact fields: `action` (`preview` or `apply`), `preview_id` (UUID), `observations` (2–12 event/time/uncertainty matches), `review` (null for preview, returned source-bound fingerprint for apply). Times are preview-local milliseconds; the server validates preview provenance and adds measured conversion offset/error. Preview is read-only; apply backs up the original manifest/provenance and replaces only alignment metadata. Existing alignment/preparation history, source changes, unsafe files and concurrent operations are refused. No upload or inference. Approximate measurements remain explicitly approximate. The browser refreshes the local preview after saving.
 - `GET /api/sessions/SESSION_UUID/analysis[?preparation=PREPARATION_UUID]`: public state, exact prepared sizes/counts, credential-present boolean (never key), reservation/active flags, safe diagnostic and cleanup status. Read-only, no model call.
 - `POST /api/sessions/SESSION_UUID/analysis`: same-origin JSON only, ≤1,024 bytes (including streamed body), exact validated fields. Actions below; no paths, provider URLs, key or model overrides accepted. Returns preparation UUID and whether this action uploaded, never raw model text. Errors use `{error: {code, message}}`, 400/413/415 invalid input, 409 active/reserved/review-required, 422 validation/provider/report failure.
 

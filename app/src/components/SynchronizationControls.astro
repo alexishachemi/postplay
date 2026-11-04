@@ -1,0 +1,129 @@
+---
+import type { PlaybackState } from '../server/playback.ts';
+interface Props { id: string; state: PlaybackState; synchronization: string | null }
+const { id, state, synchronization } = Astro.props;
+const preview = state.video?.kind === 'local preview' ? new URL(state.video.url, 'http://localhost').searchParams.get('preview') : null;
+---
+{synchronization === 'unknown' && <section data-synchronization data-endpoint={`/api/sessions/${id}/synchronization`} data-preview={preview ?? ''} aria-labelledby="synchronization-heading" class="mt-6 border-t border-slate-800 pt-6">
+  <h3 id="synchronization-heading" class="font-medium">Align video and telemetry locally</h3>
+  <p class="mt-3 text-xs leading-6 text-slate-300">Before preparation, match two visible changes to their recorded signals, at least one second apart. For the platformer, use cell pickups; for either showcase, recorded Tab timing flashes work too. Do not copy telemetry times into video times.</p>
+  {!preview ? <p class="mt-3 text-sm text-amber-200">Create a local video preview above first, then return here. No terminal or upload is needed.</p> : <>
+    <p class="mt-3 text-xs leading-6 text-slate-400">Pause at the first visible change, select its event below and press “Use paused video time”. Repeat later in the video. Seek above or use these frame-sized steps; browser seeking is approximate, not frame-perfect.</p>
+    <div class="mt-3 flex flex-wrap gap-3"><button data-sync-step="-1" class="rounded border border-slate-600 px-3 py-2 text-xs">Earlier by one frame</button><button data-sync-step="1" class="rounded border border-slate-600 px-3 py-2 text-xs">Later by one frame</button></div>
+    <form data-sync-form class="mt-4">
+      <fieldset data-sync-fields disabled class="space-y-4">
+        {[1, 2].map(number => <div data-sync-match class="rounded-lg border border-slate-700 p-3">
+          <h4 class="text-sm">Match {number}</h4>
+          <label class="mt-3 block text-xs text-slate-300">Filter recorded signals<input data-sync-filter type="search" placeholder="cell_collected, timing pulse…" class="mt-2 block w-full rounded border border-slate-600 bg-slate-950 px-3 py-2" /></label>
+          <label class="mt-3 block text-xs text-slate-300">Recorded event<select data-sync-event required class="mt-2 block w-full min-w-0 rounded border border-slate-600 bg-slate-950 px-2 py-2 text-xs"><option value="">Choose the matching event</option></select></label>
+          <p data-sync-count class="mt-2 text-xs text-slate-500"></p>
+          <div class="mt-3 flex flex-wrap items-end gap-3">
+            <label class="text-xs text-slate-300">Video time (seconds)<input data-sync-time type="number" min="0" step="0.001" required class="mt-2 block w-32 rounded border border-slate-600 bg-slate-950 px-3 py-2" /></label>
+            <button data-sync-mark type="button" class="rounded border border-teal-700 px-3 py-2 text-xs text-teal-200">Use paused video time</button>
+            <label class="text-xs text-slate-300">Observer uncertainty (± milliseconds)<input data-sync-uncertainty type="number" min="0" max="60000" step="1" value="100" required class="mt-2 block w-32 rounded border border-slate-600 bg-slate-950 px-3 py-2" /></label>
+          </div>
+        </div>)}
+        <p class="text-xs leading-6 text-slate-400">The 100 ms default is your observation allowance, not a measured guarantee. Increase it if the visual onset is ambiguous. Conversion error and an encoded frame are budgeted separately. If no recorded signal matches a visible change, record again with a visible watched interaction; alignment cannot be inferred safely from video alone.</p>
+        <label class="flex items-start gap-3 text-xs leading-6 text-slate-300"><input data-sync-confirm type="checkbox" required class="mt-1.5" /><span>I matched these events to visible changes in this recording. Measurements only verify the sampled interval.</span></label>
+        <button class="rounded border border-teal-700 px-3 py-2 text-sm text-teal-200">Review alignment — no upload</button>
+      </fieldset>
+    </form>
+    <p data-sync-review class="mt-4 whitespace-pre-line text-sm leading-6 text-slate-300" hidden></p>
+    <button data-sync-save disabled class="mt-4 rounded border border-teal-700 px-3 py-2 text-sm text-teal-200 disabled:opacity-50">Save reviewed alignment locally</button>
+    <p class="mt-3 text-xs leading-6 text-slate-400">Saving backs up the previous manifest and refreshes the local preview; original video and telemetry stay unchanged. Existing alignment and preparation history cannot be overwritten.</p>
+  </>}
+  <p data-sync-status role="status" aria-live="polite" tabindex="-1" class="mt-4 rounded border border-slate-700 p-3 text-sm leading-6 text-slate-200">{preview ? 'Loading recorded signal events…' : 'Alignment is not measured yet.'}</p>
+</section>}
+<script>
+  interface SignalChoice { id: string; label: string; detail: string }
+  for (const section of document.querySelectorAll<HTMLElement>('[data-synchronization]')) {
+    if (!section.dataset.preview) continue;
+    const endpoint = section.dataset.endpoint!, preview = section.dataset.preview!;
+    const status = section.querySelector<HTMLElement>('[data-sync-status]')!;
+    const form = section.querySelector<HTMLFormElement>('[data-sync-form]')!;
+    const fields = section.querySelector<HTMLFieldSetElement>('[data-sync-fields]')!;
+    const save = section.querySelector<HTMLButtonElement>('[data-sync-save]')!;
+    const reviewText = section.querySelector<HTMLElement>('[data-sync-review]')!;
+    const video = document.querySelector<HTMLVideoElement>('[data-video]')!;
+    let review: string | null = null, pending = false, fps = 30;
+    let observations: { event_id: string; video_ms: number; uncertainty_ms: number }[] = [];
+    const invalidate = () => { review = null; save.disabled = true; reviewText.hidden = true; };
+    const message = (text: string) => { status.textContent = text; status.focus(); status.scrollIntoView({ block: 'nearest' }); };
+    const rows = [...section.querySelectorAll<HTMLElement>('[data-sync-match]')];
+    form.addEventListener('input', invalidate); form.addEventListener('change', invalidate);
+    for (const row of rows) row.querySelector('[data-sync-mark]')!.addEventListener('click', () => {
+      if (!Number.isFinite(video.duration)) { message('Wait for video metadata, then pause at the visible change.'); return; }
+      video.pause(); row.querySelector<HTMLInputElement>('[data-sync-time]')!.value = video.currentTime.toFixed(3); invalidate();
+    });
+    for (const button of section.querySelectorAll<HTMLButtonElement>('[data-sync-step]')) button.addEventListener('click', () => {
+      if (!Number.isFinite(video.duration)) return;
+      video.pause(); video.currentTime = Math.max(0, Math.min(video.duration - 0.001, video.currentTime + Number(button.dataset.syncStep) / fps));
+    });
+    const load = async () => {
+      try {
+        const response = await fetch(endpoint), data = await response.json();
+        if (!response.ok) throw new Error(typeof data.error === 'string' ? data.error : 'Unable to load recorded events.');
+        if (!Array.isArray(data.events) || data.events.length > 10000 || !Number.isFinite(data.fps) || data.fps <= 0
+          || data.events.some((item: SignalChoice) => !item || typeof item.id !== 'string' || typeof item.label !== 'string' || typeof item.detail !== 'string')) throw new Error('Invalid recorded-event list.');
+        const events: SignalChoice[] = data.events; fps = data.fps;
+        if (!events.length) { message('No watched signal events are available. Record again with a visible watched interaction (such as a pickup or Tab timing flash in the showcases). No alignment was invented.'); return; }
+        for (const row of rows) {
+          const select = row.querySelector<HTMLSelectElement>('[data-sync-event]')!;
+          const filter = row.querySelector<HTMLInputElement>('[data-sync-filter]')!;
+          const render = () => {
+            const selected = select.value;
+            const matches = events.filter(event => `${event.id} ${event.label} ${event.detail}`.toLowerCase().includes(filter.value.toLowerCase()));
+            const shown = matches.slice(0, 200);
+            const previous = events.find(event => event.id === selected);
+            if (previous && !shown.some(event => event.id === selected)) shown.unshift(previous);
+            select.replaceChildren(new Option('Choose the matching event', ''));
+            for (const event of shown) select.add(new Option(`${event.id} · ${event.label} · ${event.detail}`, event.id));
+            select.value = selected;
+            row.querySelector<HTMLElement>('[data-sync-count]')!.textContent = `${matches.length} matching events. ${matches.length > 200 ? 'First 200 shown; narrow the filter to find later events.' : 'Use payload counts to distinguish repeated interactions.'}`;
+          };
+          filter.addEventListener('input', render); render();
+        }
+        fields.disabled = false; status.textContent = 'Ready. Match two recorded events to their visible moments above, then review.';
+      } catch (error) { message(error instanceof Error ? error.message : 'Unable to load events. Refresh to retry.'); }
+    };
+    const post = async (action: 'preview' | 'apply') => {
+      if (pending) return;
+      pending = true; fields.disabled = true; save.disabled = true;
+      let saved = false, received = false;
+      status.textContent = action === 'apply' ? 'Saving reviewed alignment locally…' : 'Measuring selected matches locally…';
+      try {
+        const response = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, preview_id: preview, observations, review }) });
+        const data = await response.json(); received = true;
+        if (!response.ok) throw new Error(typeof data.error === 'string' ? data.error : 'Alignment could not be saved.');
+        if (action === 'apply') {
+          saved = true; status.textContent = 'Alignment saved. Refreshing the local preview with its updated provenance…';
+          const playback = document.querySelector<HTMLElement>('[data-player]')!.dataset.previewUrl!;
+          const refresh = await fetch(playback, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+          if (!refresh.ok) throw new Error('Alignment saved, but the local preview could not be refreshed. Refresh this page and use Create local preview; do not repeat calibration.');
+          window.location.reload(); return;
+        }
+        review = data.review;
+        const measurement = data.measurement;
+        reviewText.textContent = `Alignment: ${measurement.synchronization.status}. Estimated uncertainty: ${measurement.synchronization.estimated_error_ms} ms.\nMatched span: ${(measurement.observed_span_ms / 1000).toFixed(3)} s. Residuals: ${measurement.residuals_ms.map((value: number) => value.toFixed(1)).join(', ')} ms.\n${measurement.synchronization.status !== 'verified' ? 'Approximate alignment: inspect the matches and uncertainty. Saving retains this warning, not verified status.\n' : ''}Save only if these matches describe what you observed. No upload occurs.`;
+        reviewText.hidden = false;
+        message('Review the measured alignment before saving.');
+      } catch (error) {
+        invalidate();
+        message(`${saved ? 'Alignment is saved. ' : ''}${error instanceof Error ? error.message : 'Connection lost.'}${action === 'apply' && !received ? ' Saving may have completed. Refresh to inspect alignment before another action.' : ''}`);
+        const refresh = document.createElement('a'); refresh.href = window.location.href; refresh.textContent = ' Refresh status'; refresh.className = 'underline text-teal-300'; status.append(refresh);
+      } finally {
+        pending = false; fields.disabled = saved || (action === 'apply' && !received); save.disabled = saved || !review;
+      }
+    };
+    form.addEventListener('submit', event => {
+      event.preventDefault(); if (!form.reportValidity()) return;
+      invalidate();
+      observations = rows.map(row => ({ event_id: row.querySelector<HTMLSelectElement>('[data-sync-event]')!.value,
+        video_ms: Math.round(row.querySelector<HTMLInputElement>('[data-sync-time]')!.valueAsNumber * 1000),
+        uncertainty_ms: row.querySelector<HTMLInputElement>('[data-sync-uncertainty]')!.valueAsNumber }));
+      void post('preview');
+    });
+    save.addEventListener('click', () => { if (review && form.reportValidity()) void post('apply'); });
+    void load();
+  }
+</script>
